@@ -21,3 +21,14 @@ pub fn count_src_tokens() -> Result<usize> {
 
     Ok(total)
 }
+
+pub fn count_src_lines() -> Result<usize> {
+    let mut total = 0usize;
+
+    for entry in rust_file_walker() {
+        let content = std::fs::read_to_string(entry.path()).unwrap_or_default();
+        total += content.lines().count();
+    }
+
+    Ok(total)
+}

@@ -32,6 +32,8 @@ enum Command {
     Fix,
     /// Audit token count and lines of code per file
     Audit,
+    /// Generate a token efficiency badge for your README
+    Badge,
 }
 
 fn main() -> Result<()> {
@@ -42,5 +44,6 @@ fn main() -> Result<()> {
         Command::Check => commands::check::run(),
         Command::Fix => commands::fix::run(),
         Command::Audit => commands::audit::run(),
+        Command::Badge => commands::badge::run(),
     }
 }

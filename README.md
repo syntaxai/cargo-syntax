@@ -1,5 +1,7 @@
 # cargo-syntax
 
+[![Token Efficiency](https://img.shields.io/badge/token_efficiency-B%20(7.7%20T/L)-blue)](https://github.com/syntaxai/cargo-syntax)
+
 **Token-efficient Rust tooling by [syntax.ai](https://syntax.ai)**
 
 `cargo-syntax` is a cargo subcommand that helps you write minimal, token-efficient Rust code. It enforces strict clippy lints, compact formatting, and provides tooling to measure how many LLM tokens your codebase consumes.
