@@ -1,5 +1,6 @@
 mod commands;
 mod templates;
+pub mod tokens;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
