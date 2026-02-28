@@ -3,7 +3,8 @@ use std::path::Path;
 use anyhow::Result;
 use tiktoken_rs::o200k_base;
 use tokei::{Config, Languages};
-use walkdir::WalkDir;
+
+use crate::tokens;
 
 pub fn run() -> Result<()> {
     let bpe = o200k_base()?;
@@ -15,17 +16,13 @@ pub fn run() -> Result<()> {
 
     let rust_stats = languages.get(&tokei::LanguageType::Rust);
 
-    println!("{:<40} {:>6} {:>8} {:>6}", "File", "Lines", "Tokens", "T/L");
-    println!("{}", "-".repeat(63));
+    println!("{:<60} {:>6} {:>8} {:>6}", "File", "Lines", "Tokens", "T/L");
+    println!("{}", "-".repeat(83));
 
     let mut total_lines = 0usize;
     let mut total_tokens = 0usize;
 
-    for entry in WalkDir::new("src")
-        .into_iter()
-        .filter_map(Result::ok)
-        .filter(|e| e.path().extension().is_some_and(|ext| ext == "rs"))
-    {
+    for entry in tokens::rust_file_walker() {
         let file_path = entry.path();
         let content = std::fs::read_to_string(file_path).unwrap_or_default();
         let tokens = bpe.encode_with_special_tokens(&content).len();
@@ -33,7 +30,7 @@ pub fn run() -> Result<()> {
         let ratio = if lines > 0 { tokens as f64 / lines as f64 } else { 0.0 };
 
         let display = file_path.strip_prefix(path).unwrap_or(file_path);
-        println!("{:<40} {:>6} {:>8} {:>5.1}", display.display(), lines, tokens, ratio);
+        println!("{:<60} {:>6} {:>8} {:>5.1}", display.display(), lines, tokens, ratio);
 
         total_lines += lines;
         total_tokens += tokens;
@@ -41,8 +38,8 @@ pub fn run() -> Result<()> {
 
     let avg_ratio = if total_lines > 0 { total_tokens as f64 / total_lines as f64 } else { 0.0 };
 
-    println!("{}", "-".repeat(63));
-    println!("{:<40} {:>6} {:>8} {:>5.1}", "Total", total_lines, total_tokens, avg_ratio);
+    println!("{}", "-".repeat(83));
+    println!("{:<60} {:>6} {:>8} {:>5.1}", "Total", total_lines, total_tokens, avg_ratio);
 
     if let Some(stats) = rust_stats {
         println!();
