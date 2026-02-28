@@ -1,0 +1,45 @@
+mod commands;
+mod templates;
+
+use anyhow::Result;
+use clap::{Parser, Subcommand};
+
+#[derive(Parser)]
+#[command(name = "cargo")]
+#[command(bin_name = "cargo")]
+enum Cli {
+    Syntax(SyntaxArgs),
+}
+
+#[derive(Parser)]
+#[command(version, about = "Token-efficient Rust tooling by syntax.ai")]
+struct SyntaxArgs {
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// Scaffold a new token-efficient Rust project
+    Init {
+        /// Project name
+        name: String,
+    },
+    /// Run strict clippy + fmt checks
+    Check,
+    /// Auto-fix clippy warnings and format code
+    Fix,
+    /// Audit token count and lines of code per file
+    Audit,
+}
+
+fn main() -> Result<()> {
+    let Cli::Syntax(args) = Cli::parse();
+
+    match args.command {
+        Command::Init { name } => commands::init::run(&name),
+        Command::Check => commands::check::run(),
+        Command::Fix => commands::fix::run(),
+        Command::Audit => commands::audit::run(),
+    }
+}
