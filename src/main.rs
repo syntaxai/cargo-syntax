@@ -34,6 +34,14 @@ enum Command {
     Audit,
     /// Generate a token efficiency badge for your README
     Badge,
+    /// Apply token-efficient configs to an existing project
+    Apply,
+    /// Show the N most token-heavy files
+    Top {
+        /// Number of files to show (default: 10)
+        #[arg(default_value = "10")]
+        n: usize,
+    },
 }
 
 fn main() -> Result<()> {
@@ -45,5 +53,7 @@ fn main() -> Result<()> {
         Command::Fix => commands::fix::run(),
         Command::Audit => commands::audit::run(),
         Command::Badge => commands::badge::run(),
+        Command::Apply => commands::apply::run(),
+        Command::Top { n } => commands::top::run(n),
     }
 }
