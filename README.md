@@ -85,13 +85,40 @@ cargo syntax top        # top 10 files
 cargo syntax top 3      # top 3 files
 ```
 
-### `cargo syntax suggest`
+### `cargo syntax suggest [--deep]`
 
 Analyze your code against 39 token-efficiency clippy lints and show grouped suggestions per file.
 
 ```bash
-cargo syntax suggest
+cargo syntax suggest          # clippy-based suggestions only
+cargo syntax suggest --deep   # also detect cross-file code duplication (no API key needed)
 ```
+
+With `--deep`, runs a static analysis engine that finds:
+- **Cross-file duplicates** — identical code blocks repeated in 2+ files (sliding window hash comparison)
+- **Near-duplicate functions** — functions within a file that differ by only a few tokens
+
+```
+No suggestions — code already follows token-efficient patterns.
+
+Cross-file duplicates:
+
+  1. 3-line block duplicated in 7 files
+     json!({ | "type": "object",
+     Files: src/commands/diff.rs:23, src/commands/explain.rs:49, (+5 more)
+     Saves: ~76 tokens
+
+Near-duplicate functions:
+
+  2. format_input_cost ≈ format_output_cost (differ by ~21 tokens)
+     File: src/commands/models.rs:107, :111
+     Saves: ~21 tokens
+
+──────────────────────────────────────────────────────────────────────
+Deep analysis: 45 pattern(s), ~1027 tokens saveable (4.0% of project)
+```
+
+The `--deep` mode runs entirely offline in <1 second — no API key required. For AI-powered cross-file refactoring suggestions, see `cargo syntax refactor`.
 
 ### `cargo syntax badge`
 
@@ -553,9 +580,10 @@ cargo test
 ```
 
 **39 tests** covering:
-- `tokens` module: token counting, efficiency grades, project scanning, git helpers (21 integration tests)
-- `ci` module: grade ranking and ordering (7 unit tests)
-- `generate_tests` module: markdown fence stripping, crate/module detection, path generation (11 unit tests)
+- `tokens` module: token counting, efficiency grades, project scanning, git helpers (23 integration tests)
+- `deep` module: normalization, hashing, similarity, function extraction, savings estimation (10 unit tests)
+- `ci` module: grade ranking and ordering (2 unit tests)
+- `generate_tests` module: crate/module detection, path generation, markdown fences (4 unit tests)
 
 ## License
 
