@@ -103,10 +103,10 @@ No suggestions — code already follows token-efficient patterns.
 
 Cross-file duplicates:
 
-  1. 3-line block duplicated in 7 files
+  1. 3-line block duplicated in 8 files
      json!({ | "type": "object",
-     Files: src/commands/diff.rs:23, src/commands/explain.rs:49, (+5 more)
-     Saves: ~76 tokens
+     Files: src/commands/diff.rs:16, src/commands/explain.rs:49, (+6 more)
+     Saves: ~89 tokens
 
 Near-duplicate functions:
 
@@ -115,7 +115,7 @@ Near-duplicate functions:
      Saves: ~21 tokens
 
 ──────────────────────────────────────────────────────────────────────
-Deep analysis: 45 pattern(s), ~1027 tokens saveable (4.0% of project)
+Deep analysis: 33 pattern(s), ~765 tokens saveable (3.0% of project)
 ```
 
 The `--deep` mode runs entirely offline in <1 second — no API key required. For AI-powered cross-file refactoring suggestions, see `cargo syntax refactor`.
