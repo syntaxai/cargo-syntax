@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::BufRead;
 use std::process::{Command, Stdio};
 
@@ -83,8 +83,7 @@ struct Hint {
 }
 
 pub fn run() -> Result<()> {
-    println!("Analyzing code for token-efficiency improvements...");
-    println!();
+    println!("Analyzing code for token-efficiency improvements...\n");
 
     let mut args = vec![
         "clippy".to_string(),
@@ -93,10 +92,7 @@ pub fn run() -> Result<()> {
         "--".to_string(),
     ];
 
-    for lint in WARN_LINTS {
-        args.push("-W".to_string());
-        args.push(format!("clippy::{lint}"));
-    }
+    args.extend(WARN_LINTS.iter().flat_map(|&lint| ["-W".to_string(), format!("clippy::{lint}")]));
 
     let output =
         Command::new("cargo").args(&args).stdout(Stdio::piped()).stderr(Stdio::null()).output()?;
@@ -106,35 +102,26 @@ pub fn run() -> Result<()> {
     }
 
     let mut suggestions: HashMap<String, Vec<Hint>> = HashMap::new();
-    let mut seen: std::collections::HashSet<(String, u32, String)> =
-        std::collections::HashSet::new();
+    let mut seen = HashSet::new();
 
     for line in output.stdout.lines() {
         let line = line?;
-        let Ok(msg) = serde_json::from_str::<ClippyMsg>(&line) else {
-            continue;
-        };
+        let Ok(msg) = serde_json::from_str::<ClippyMsg>(&line) else { continue };
         if msg.reason != "compiler-message" {
             continue;
         }
-        let Some(diag) = msg.message else {
-            continue;
-        };
+        let Some(diag) = msg.message else { continue };
         if diag.level != "warning" && diag.level != "error" {
             continue;
         }
-        let Some(code) = diag.code else {
-            continue;
-        };
+        let Some(code) = diag.code else { continue };
         if !code.code.starts_with("clippy::") {
             continue;
         }
 
         let lint = code.code.trim_start_matches("clippy::").to_string();
 
-        let Some(span) = diag.spans.iter().find(|s| s.is_primary) else {
-            continue;
-        };
+        let Some(span) = diag.spans.iter().find(|s| s.is_primary) else { continue };
 
         let file = normalize(&span.file_name);
         if file.contains("target/") {
@@ -159,11 +146,8 @@ pub fn run() -> Result<()> {
     }
 
     let stats = tokens::scan_project()?;
-    let ratio_map: HashMap<String, f64> = stats
-        .files
-        .iter()
-        .map(|f| (normalize(&f.path), f.ratio))
-        .collect();
+    let ratio_map: HashMap<String, f64> =
+        stats.files.iter().map(|f| (normalize(&f.path), f.ratio)).collect();
 
     let mut files: Vec<(String, Vec<Hint>)> = suggestions.into_iter().collect();
     files.sort_by(|a, b| b.1.len().cmp(&a.1.len()));
@@ -192,9 +176,10 @@ pub fn run() -> Result<()> {
         println!();
     }
 
-    println!("{}", "─".repeat(70));
-    println!("{total} suggestion(s) across {file_count} file(s)");
-    println!("Run `cargo syntax fix` to auto-apply all fixable suggestions.");
+    println!(
+        "{}\n{total} suggestion(s) across {file_count} file(s)\nRun `cargo syntax fix` to auto-apply all fixable suggestions.",
+        "─".repeat(70)
+    );
 
     Ok(())
 }

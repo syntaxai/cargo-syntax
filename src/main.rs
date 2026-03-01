@@ -76,6 +76,21 @@ enum Command {
         #[arg(long)]
         model: Option<String>,
     },
+    /// Bulk AI-powered rewrite of the most token-heavy files
+    Batch {
+        /// Number of files to rewrite (default: 5)
+        #[arg(default_value = "5")]
+        n: usize,
+        /// Run cargo check + cargo test after each rewrite, rollback on failure
+        #[arg(long)]
+        validate: bool,
+        /// Auto-accept rewrites without prompting
+        #[arg(long)]
+        auto: bool,
+        /// OpenRouter model (default: deepseek/deepseek-chat, override with CARGO_SYNTAX_MODEL)
+        #[arg(long)]
+        model: Option<String>,
+    },
     /// List available OpenRouter models for code tasks
     Models {
         /// Filter models by name or ID (e.g. "deepseek", "claude", "gemini")
@@ -106,6 +121,10 @@ fn main() -> Result<()> {
         Command::Diff { range, staged, fix, model } => {
             let model = model.unwrap_or_else(tokens::default_model);
             commands::diff::run(range.as_deref(), staged, fix, &model)
+        }
+        Command::Batch { n, validate, auto, model } => {
+            let model = model.unwrap_or_else(tokens::default_model);
+            commands::batch::run(n, validate, auto, &model)
         }
         Command::Models { search } => commands::models::run(search.as_deref()),
     }

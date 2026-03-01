@@ -101,7 +101,8 @@ pub fn chat_json<T: serde::de::DeserializeOwned>(
     };
 
     let raw = chat_with_format(model, system, prompt, Some(format))?;
-    serde_json::from_str(&raw).map_err(|e| anyhow::anyhow!("Failed to parse structured response: {e}"))
+    serde_json::from_str(&raw)
+        .map_err(|e| anyhow::anyhow!("Failed to parse structured response: {e}"))
 }
 
 fn chat_with_format(

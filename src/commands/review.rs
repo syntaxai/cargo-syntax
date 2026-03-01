@@ -63,7 +63,11 @@ pub fn run(n: usize, model: &str) -> Result<()> {
     let show = n.min(stats.files.len());
     let max_tokens = model_context_limit(model).unwrap_or(DEFAULT_MAX_TOKENS);
 
-    println!("Scanning project... {} files, {} tokens total", stats.files.len(), stats.total_tokens);
+    println!(
+        "Scanning project... {} files, {} tokens total",
+        stats.files.len(),
+        stats.total_tokens
+    );
     println!("Reviewing top {show} files via {model}...");
     println!();
 
@@ -78,11 +82,18 @@ pub fn run(n: usize, model: &str) -> Result<()> {
 
         println!(
             "  #{:<2} {}  ({} lines, {} tokens, T/L: {:.1}, {pct_of_total:.1}% of total)",
-            i + 1, f.path, f.lines, f.tokens, f.ratio
+            i + 1,
+            f.path,
+            f.lines,
+            f.tokens,
+            f.ratio
         );
 
         if f.tokens > max_tokens {
-            println!("      (skipped — {} tokens exceeds {max_tokens} limit for {model})", f.tokens);
+            println!(
+                "      (skipped — {} tokens exceeds {max_tokens} limit for {model})",
+                f.tokens
+            );
             println!("      Tip: split this file into smaller modules.");
             println!();
             continue;
@@ -102,7 +113,10 @@ pub fn run(n: usize, model: &str) -> Result<()> {
                 let estimated: u32 = result.suggestions.iter().map(|s| s.tokens_saved).sum();
 
                 for s in &result.suggestions {
-                    println!("      - {} [{}] (~{} tokens)", s.description, s.location, s.tokens_saved);
+                    println!(
+                        "      - {} [{}] (~{} tokens)",
+                        s.description, s.location, s.tokens_saved
+                    );
                 }
 
                 if estimated > 0 {
@@ -123,7 +137,11 @@ pub fn run(n: usize, model: &str) -> Result<()> {
     println!("{}", "─".repeat(70));
 
     let top_tokens: usize = stats.files.iter().take(show).map(|f| f.tokens).sum();
-    println!("Reviewed {show}/{} files ({top_tokens} of {} tokens)", stats.files.len(), stats.total_tokens);
+    println!(
+        "Reviewed {show}/{} files ({top_tokens} of {} tokens)",
+        stats.files.len(),
+        stats.total_tokens
+    );
 
     if total_estimated_savings > 0 {
         let total_pct = (total_estimated_savings as f64 / stats.total_tokens as f64) * 100.0;

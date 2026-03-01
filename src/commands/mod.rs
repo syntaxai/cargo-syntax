@@ -1,6 +1,7 @@
 pub mod apply;
 pub mod audit;
 pub mod badge;
+pub mod batch;
 pub mod check;
 pub mod diff;
 pub mod fix;

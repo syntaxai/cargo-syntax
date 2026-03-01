@@ -12,8 +12,9 @@ pub fn run() -> Result<()> {
 
     let (grade, color, _) = tokens::efficiency_grade(ratio);
 
-    let badge_url =
-        format!("https://img.shields.io/badge/token_efficiency-{grade}%20({ratio:.1}%20T/L)-{color}");
+    let badge_url = format!(
+        "https://img.shields.io/badge/token_efficiency-{grade}%20({ratio:.1}%20T/L)-{color}"
+    );
     let link = "https://github.com/syntaxai/cargo-syntax";
 
     println!("Markdown:");

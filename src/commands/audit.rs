@@ -19,10 +19,16 @@ pub fn run() -> Result<()> {
     };
 
     println!("{}", "-".repeat(83));
-    println!("{:<60} {:>6} {:>8} {:>5.1}", "Total", stats.total_lines, stats.total_tokens, avg_ratio);
+    println!(
+        "{:<60} {:>6} {:>8} {:>5.1}",
+        "Total", stats.total_lines, stats.total_tokens, avg_ratio
+    );
 
     println!();
-    println!("Code: {} | Comments: {} | Blanks: {}", stats.code_lines, stats.comment_lines, stats.blank_lines);
+    println!(
+        "Code: {} | Comments: {} | Blanks: {}",
+        stats.code_lines, stats.comment_lines, stats.blank_lines
+    );
 
     println!();
     let (_, _, grade) = tokens::efficiency_grade(avg_ratio);
