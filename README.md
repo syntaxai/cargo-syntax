@@ -159,6 +159,26 @@ Reviewing top 3 files via deepseek/deepseek-chat...
   Run `cargo syntax rewrite <file>` on any file to apply changes.
 ```
 
+### `cargo syntax models [search]`
+
+List available OpenRouter models, sorted by price. Without arguments, shows popular code models. Pass a search term to filter.
+
+```bash
+cargo syntax models             # show code-focused models
+cargo syntax models free        # show only free models
+cargo syntax models claude      # show Claude models
+```
+
+```
+Model ID                                    Context      Input/M     Output/M
+──────────────────────────────────────────────────────────────────────────────
+qwen/qwen3-coder:free                       262000      $0.0000      $0.0000
+deepseek/deepseek-chat                      163840      $0.3200      $0.8900
+google/gemini-2.5-flash                    1048576      $0.3000      $2.5000
+anthropic/claude-sonnet-4                  1000000      $3.0000     $15.0000
+...
+```
+
 ## Clippy Lints
 
 `cargo-syntax` enforces three tiers of lints:

@@ -2,6 +2,7 @@ use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
 
 const BASE_URL: &str = "https://openrouter.ai/api/v1/chat/completions";
+const MODELS_URL: &str = "https://openrouter.ai/api/v1/models";
 
 #[derive(Serialize)]
 struct Request {
@@ -29,6 +30,44 @@ struct Choice {
 #[derive(Deserialize)]
 struct ApiError {
     message: String,
+}
+
+#[derive(Deserialize)]
+pub struct Model {
+    pub id: String,
+    pub name: String,
+    pub context_length: Option<u64>,
+    pub pricing: Option<Pricing>,
+}
+
+#[derive(Deserialize)]
+pub struct Pricing {
+    pub prompt: Option<String>,
+    pub completion: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct ModelsResponse {
+    data: Vec<Model>,
+}
+
+pub fn list_models() -> Result<Vec<Model>> {
+    let agent = ureq::Agent::new_with_config(
+        ureq::config::Config::builder()
+            .http_status_as_error(false)
+            .build(),
+    );
+
+    let mut response = agent.get(MODELS_URL).call()?;
+
+    let status = response.status();
+    if status != 200 {
+        let body = response.body_mut().read_to_string()?;
+        bail!("OpenRouter API error (HTTP {status}): {body}");
+    }
+
+    let resp: ModelsResponse = response.body_mut().read_json()?;
+    Ok(resp.data)
 }
 
 pub fn chat(model: &str, system: &str, prompt: &str) -> Result<String> {

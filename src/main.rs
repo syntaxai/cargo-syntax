@@ -62,6 +62,11 @@ enum Command {
         #[arg(long, default_value = "deepseek/deepseek-chat")]
         model: String,
     },
+    /// List available OpenRouter models for code tasks
+    Models {
+        /// Filter models by name or ID (e.g. "deepseek", "claude", "gemini")
+        search: Option<String>,
+    },
 }
 
 fn main() -> Result<()> {
@@ -78,5 +83,6 @@ fn main() -> Result<()> {
         Command::Suggest => commands::suggest::run(),
         Command::Rewrite { file, model } => commands::rewrite::run(&file, &model),
         Command::Review { n, model } => commands::review::run(n, &model),
+        Command::Models { search } => commands::models::run(search.as_deref()),
     }
 }

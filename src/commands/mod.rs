@@ -4,6 +4,7 @@ pub mod badge;
 pub mod check;
 pub mod fix;
 pub mod init;
+pub mod models;
 pub mod review;
 pub mod rewrite;
 pub mod suggest;
