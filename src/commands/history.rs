@@ -3,6 +3,8 @@ use std::process::Command;
 use anyhow::{Result, bail};
 use tiktoken_rs::o200k_base;
 
+use crate::tokens;
+
 struct CommitStats {
     hash: String,
     message: String,
@@ -31,12 +33,12 @@ pub fn run(n: usize) -> Result<()> {
     let mut snapshots: Vec<CommitStats> = Vec::new();
 
     for (hash, msg) in &commits {
-        let rs_files = list_rs_files(hash)?;
+        let rs_files = tokens::git_list_rs_files(hash)?;
         let mut total_tokens = 0;
         let mut total_lines = 0;
 
         for file in &rs_files {
-            if let Ok(content) = show_file(hash, file) {
+            if let Ok(content) = tokens::git_show_file(hash, file) {
                 total_tokens += bpe.encode_with_special_tokens(&content).len();
                 total_lines += content.lines().count();
             }
@@ -51,7 +53,6 @@ pub fn run(n: usize) -> Result<()> {
         });
     }
 
-    // Print newest-last so the trend reads chronologically
     println!(
         "{:<10} {:>5} {:>8} {:>6} {:>6}  Message",
         "Commit", "Files", "Tokens", "Lines", "T/L"
@@ -71,7 +72,6 @@ pub fn run(n: usize) -> Result<()> {
         );
     }
 
-    // Show delta between oldest and newest
     if snapshots.len() >= 2 {
         let newest = &snapshots[0];
         let oldest = snapshots.last().unwrap();
@@ -87,32 +87,6 @@ pub fn run(n: usize) -> Result<()> {
     }
 
     Ok(())
-}
-
-fn list_rs_files(commit: &str) -> Result<Vec<String>> {
-    let output = Command::new("git").args(["ls-tree", "-r", "--name-only", commit]).output()?;
-
-    if !output.status.success() {
-        bail!("git ls-tree failed for {commit}");
-    }
-
-    let files = String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .filter(|f| f.ends_with(".rs") && !f.starts_with("target/"))
-        .map(String::from)
-        .collect();
-
-    Ok(files)
-}
-
-fn show_file(commit: &str, file: &str) -> Result<String> {
-    let output = Command::new("git").args(["show", &format!("{commit}:{file}")]).output()?;
-
-    if !output.status.success() {
-        bail!("git show failed for {commit}:{file}");
-    }
-
-    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
 fn truncate(s: &str, max: usize) -> String {

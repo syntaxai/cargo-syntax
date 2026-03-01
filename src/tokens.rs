@@ -112,3 +112,27 @@ pub fn efficiency_grade(ratio: f64) -> (&'static str, &'static str, &'static str
 pub fn default_model() -> String {
     std::env::var("CARGO_SYNTAX_MODEL").unwrap_or_else(|_| "deepseek/deepseek-chat".to_string())
 }
+
+/// List .rs files at a specific git ref (commit/branch/tag), excluding target/
+pub fn git_list_rs_files(rev: &str) -> Result<Vec<String>> {
+    use std::process::Command;
+    let output = Command::new("git").args(["ls-tree", "-r", "--name-only", rev]).output()?;
+    if !output.status.success() {
+        anyhow::bail!("git ls-tree failed for {rev}");
+    }
+    Ok(String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter(|f| f.ends_with(".rs") && !f.starts_with("target/"))
+        .map(String::from)
+        .collect())
+}
+
+/// Read a file's content at a specific git ref
+pub fn git_show_file(rev: &str, file: &str) -> Result<String> {
+    use std::process::Command;
+    let output = Command::new("git").args(["show", &format!("{rev}:{file}")]).output()?;
+    if !output.status.success() {
+        anyhow::bail!("git show failed for {rev}:{file}");
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+}
