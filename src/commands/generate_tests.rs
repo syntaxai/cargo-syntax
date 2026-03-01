@@ -1,7 +1,6 @@
-use std::io::{self, BufRead, Write};
 use std::path::Path;
 
-use anyhow::{Result, bail};
+use anyhow::Result;
 use serde::Deserialize;
 use serde_json::json;
 
@@ -62,17 +61,7 @@ fn coverage_schema() -> serde_json::Value {
 }
 
 pub fn run(file: &str, output: Option<&str>, model: &str) -> Result<()> {
-    let path = Path::new(file);
-    if !path.exists() {
-        bail!("File not found: {file}");
-    }
-    if path.extension().is_none_or(|ext| ext != "rs") {
-        bail!("Only .rs files are supported");
-    }
-
-    let content = std::fs::read_to_string(path)?;
-    let token_count = tokens::count_tokens(&content)?;
-    let lines = content.lines().count();
+    let (content, token_count, lines) = tokens::read_rs_file(file)?;
 
     let crate_name = detect_crate_name();
     let module_path = file_to_module_path(file);
@@ -86,7 +75,7 @@ pub fn run(file: &str, output: Option<&str>, model: &str) -> Result<()> {
          Source file ({file}):\n{content}"
     );
     let test_code = openrouter::chat(model, TEST_PROMPT, &prompt)?;
-    let test_code = strip_markdown_fences(&test_code);
+    let test_code = tokens::strip_markdown_fences(&test_code);
     eprintln!("done");
 
     let test_tokens = tokens::count_tokens(&test_code)?;
@@ -127,13 +116,9 @@ pub fn run(file: &str, output: Option<&str>, model: &str) -> Result<()> {
     let target = if let Some(out) = output { out.to_string() } else { default_test_path(file) };
 
     println!();
-    print!("Write to {target}? [y/n/append] ");
-    io::stdout().flush()?;
+    let input = tokens::ask_accept(&format!("Write to {target}? [y/n/append]"))?;
 
-    let mut input = String::new();
-    io::stdin().lock().read_line(&mut input)?;
-
-    match input.trim() {
+    match input.as_str() {
         "y" | "Y" => {
             write_tests(&target, &test_code, false)?;
             println!("Written to {target}");
@@ -221,23 +206,10 @@ fn file_to_module_path(file: &str) -> String {
         .to_string()
 }
 
-fn strip_markdown_fences(s: &str) -> String {
-    // Extract code from within ```rust ... ``` blocks, even if there's text around them
-    if let Some(start) = s.find("```rust").or_else(|| s.find("```rs")).or_else(|| s.find("```")) {
-        let after_fence = &s[start..];
-        let code_start = after_fence.find('\n').map_or(0, |p| p + 1);
-        let code_section = &after_fence[code_start..];
-        if let Some(end) = code_section.find("```") {
-            return code_section[..end].trim().to_string();
-        }
-        return code_section.trim().to_string();
-    }
-    s.trim().to_string()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tokens;
 
     #[test]
     fn test_strip_markdown_fences() {
@@ -249,7 +221,7 @@ mod tests {
             ("```rs\nfn main() {}\n```", "fn main() {}"),
         ];
         for (input, expected) in cases {
-            assert_eq!(strip_markdown_fences(input), expected, "input: {input:?}");
+            assert_eq!(tokens::strip_markdown_fences(input), expected, "input: {input:?}");
         }
     }
 

@@ -68,7 +68,11 @@ pub fn run(n: usize, validate: bool, auto: bool, model: &str) -> Result<()> {
             result.tokens_before, result.tokens_after
         );
 
-        let accepted = if auto { true } else { ask_accept()? };
+        let accepted = if auto {
+            true
+        } else {
+            matches!(tokens::ask_accept("  Accept? [y/n]")?.as_str(), "y" | "Y")
+        };
 
         if accepted {
             std::fs::write(&f.path, &result.rewritten)?;
@@ -109,15 +113,6 @@ pub fn run(n: usize, validate: bool, auto: bool, model: &str) -> Result<()> {
     }
 
     Ok(())
-}
-
-fn ask_accept() -> Result<bool> {
-    use std::io::{self, BufRead, Write};
-    print!("  Accept? [y/n] ");
-    io::stdout().flush()?;
-    let mut input = String::new();
-    io::stdin().lock().read_line(&mut input)?;
-    Ok(matches!(input.trim(), "y" | "Y"))
 }
 
 fn run_validation() -> Result<()> {

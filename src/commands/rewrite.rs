@@ -1,8 +1,7 @@
-use crate::openrouter;
+use crate::{openrouter, tokens};
 use anyhow::{Result, bail};
 use serde::Deserialize;
 use serde_json::json;
-use std::io::{self, BufRead, Write};
 use std::path::Path;
 use tiktoken_rs::o200k_base;
 
@@ -71,7 +70,7 @@ pub fn rewrite_file(file: &str, model: &str) -> Result<RewriteResult> {
     let lines_before = original.lines().count();
 
     let raw = openrouter::chat(model, REWRITE_PROMPT, &original)?;
-    let rewritten = strip_markdown_fences(&raw);
+    let rewritten = tokens::strip_markdown_fences(&raw);
     let tokens_after = bpe.encode_with_special_tokens(&rewritten).len();
     let lines_after = rewritten.lines().count();
 
@@ -132,14 +131,10 @@ pub fn run(file: &str, model: &str) -> Result<()> {
     }
 
     println!();
-    print!("Accept? [y/n/diff] ");
-    io::stdout().flush()?;
-
-    let mut input = String::new();
-    io::stdin().lock().read_line(&mut input)?;
+    let input = tokens::ask_accept("Accept? [y/n/diff]")?;
 
     let path = Path::new(file);
-    match input.trim() {
+    match input.as_str() {
         "y" | "Y" => {
             std::fs::write(path, &result.rewritten)?;
             println!("Written to {file}");
@@ -147,11 +142,8 @@ pub fn run(file: &str, model: &str) -> Result<()> {
         "diff" | "d" => {
             print_diff(&result.original, &result.rewritten);
             println!();
-            print!("Accept? [y/n] ");
-            io::stdout().flush()?;
-            input.clear();
-            io::stdin().lock().read_line(&mut input)?;
-            if input.trim() == "y" || input.trim() == "Y" {
+            let input2 = tokens::ask_accept("Accept? [y/n]")?;
+            if matches!(input2.as_str(), "y" | "Y") {
                 std::fs::write(path, &result.rewritten)?;
                 println!("Written to {file}");
             } else {
@@ -162,20 +154,6 @@ pub fn run(file: &str, model: &str) -> Result<()> {
     }
 
     Ok(())
-}
-
-fn strip_markdown_fences(s: &str) -> String {
-    let trimmed = s.trim();
-    if trimmed.starts_with("```") {
-        let without_opening = trimmed
-            .strip_prefix("```rust")
-            .or_else(|| trimmed.strip_prefix("```rs"))
-            .or_else(|| trimmed.strip_prefix("```"))
-            .unwrap_or(trimmed);
-        without_opening.strip_suffix("```").unwrap_or(without_opening).trim().to_string()
-    } else {
-        trimmed.to_string()
-    }
 }
 
 fn print_diff(original: &str, rewritten: &str) {

@@ -1,7 +1,6 @@
 use std::process::Command;
 
 use anyhow::{Result, bail};
-use tiktoken_rs::o200k_base;
 
 use crate::tokens;
 
@@ -14,7 +13,6 @@ struct BranchStats {
 
 pub fn run(branch: &str) -> Result<()> {
     let current = current_branch()?;
-    let bpe = o200k_base()?;
 
     println!("Comparing token efficiency: {current} vs {branch}\n");
 
@@ -29,22 +27,12 @@ pub fn run(branch: &str) -> Result<()> {
     };
 
     let target_stats = {
-        let rs_files = tokens::git_list_rs_files(branch)?;
-        let mut total_tokens = 0;
-        let mut total_lines = 0;
-
-        for file in &rs_files {
-            if let Ok(content) = tokens::git_show_file(branch, file) {
-                total_tokens += bpe.encode_with_special_tokens(&content).len();
-                total_lines += content.lines().count();
-            }
-        }
-
+        let rev = tokens::count_rev_tokens(branch)?;
         BranchStats {
             name: branch.to_string(),
-            files: rs_files.len(),
-            tokens: total_tokens,
-            lines: total_lines,
+            files: rev.files,
+            tokens: rev.tokens,
+            lines: rev.lines,
         }
     };
 

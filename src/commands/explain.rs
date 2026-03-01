@@ -120,14 +120,7 @@ pub fn run(path: &str, model: &str) -> Result<()> {
 }
 
 fn explain_file(file: &str, model: &str) -> Result<()> {
-    let path = Path::new(file);
-    if path.extension().is_none_or(|ext| ext != "rs") {
-        bail!("Only .rs files are supported");
-    }
-
-    let content = std::fs::read_to_string(path)?;
-    let token_count = tokens::count_tokens(&content)?;
-    let lines = content.lines().count();
+    let (content, token_count, lines) = tokens::read_rs_file(file)?;
 
     println!("Explaining {file} ({lines} lines, {token_count} tokens) via {model}...");
     eprint!("  analyzing... ");

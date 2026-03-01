@@ -82,12 +82,7 @@ pub fn run(model: &str) -> Result<()> {
         stats.total_tokens
     );
 
-    let mut manifest = String::new();
-    for f in &stats.files {
-        manifest.push_str(&format!("=== {} ({} tokens) ===\n", f.path, f.tokens));
-        manifest.push_str(&f.content);
-        manifest.push_str("\n\n");
-    }
+    let manifest = tokens::build_manifest(&stats);
 
     eprint!("  analyzing... ");
 
