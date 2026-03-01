@@ -6,6 +6,10 @@ description = "Token-efficient Rust tooling — init, check, fix, and audit your
 repository = "https://github.com/syntaxai/cargo-syntax"
 license = "MIT"
 
+[lib]
+name = "cargo_syntax"
+path = "src/lib.rs"
+
 [[bin]]
 name = "cargo-syntax"
 path = "src/main.rs"

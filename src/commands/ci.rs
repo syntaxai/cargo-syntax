@@ -101,3 +101,48 @@ fn print_human(stats: &tokens::ProjectStats, avg_ratio: f64, grade: &str, failur
         println!("FAILED ({} check(s))", failures.len());
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_grade_rank_a_plus() {
+        assert_eq!(grade_rank("A+"), 5);
+    }
+
+    #[test]
+    fn test_grade_rank_a() {
+        assert_eq!(grade_rank("A"), 4);
+    }
+
+    #[test]
+    fn test_grade_rank_b() {
+        assert_eq!(grade_rank("B"), 3);
+    }
+
+    #[test]
+    fn test_grade_rank_c() {
+        assert_eq!(grade_rank("C"), 2);
+    }
+
+    #[test]
+    fn test_grade_rank_d() {
+        assert_eq!(grade_rank("D"), 1);
+    }
+
+    #[test]
+    fn test_grade_rank_unknown() {
+        assert_eq!(grade_rank("X"), 0);
+        assert_eq!(grade_rank(""), 0);
+    }
+
+    #[test]
+    fn test_grade_rank_ordering() {
+        assert!(grade_rank("A+") > grade_rank("A"));
+        assert!(grade_rank("A") > grade_rank("B"));
+        assert!(grade_rank("B") > grade_rank("C"));
+        assert!(grade_rank("C") > grade_rank("D"));
+        assert!(grade_rank("D") > grade_rank("X"));
+    }
+}

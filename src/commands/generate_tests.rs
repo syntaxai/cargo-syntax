@@ -8,16 +8,19 @@ use serde_json::json;
 use crate::{openrouter, tokens};
 
 const TEST_PROMPT: &str = "\
-You are a Rust test engineer. Given a Rust source file, generate comprehensive unit tests. \
+You are a Rust test engineer. Given a Rust source file from a crate, generate integration tests. \
+The tests will be placed in a separate file (tests/ directory), NOT inline in the source. \
 Rules: \
-1. Test every public function, including edge cases and error paths \
-2. Use #[test] functions in a `mod tests` block with `use super::*;` \
-3. Use assert!, assert_eq!, assert_ne! — no external test frameworks \
-4. For functions that return Result, test both Ok and Err paths \
-5. Use descriptive test names: test_<function>_<scenario> \
-6. Keep tests minimal and token-efficient (no unnecessary comments) \
-7. If a function requires complex setup (filesystem, network), use #[ignore] \
-8. Return ONLY the test module code (mod tests { ... }), no other code";
+1. Import the crate with `use <crate_name>::<module>::*;` — do NOT use `mod tests` or `use super::*;` \
+2. Write top-level #[test] functions — no wrapping `mod tests` block \
+3. Test every public function, including edge cases and error paths \
+4. Use assert!, assert_eq!, assert_ne! — no external test frameworks \
+5. For functions that return Result, test both Ok and Err paths \
+6. Use descriptive test names: test_<function>_<scenario> \
+7. Keep tests minimal and token-efficient (no unnecessary comments) \
+8. If a function requires complex setup (filesystem, network), mark with #[ignore] \
+9. In Rust edition 2024, std::env::set_var/remove_var are unsafe — wrap in unsafe {} \
+10. Return ONLY the test functions, no markdown fences or explanations";
 
 const EXPLAIN_PROMPT: &str = "\
 Given a Rust source file and generated tests, produce a brief summary of test coverage.";
@@ -71,10 +74,18 @@ pub fn run(file: &str, output: Option<&str>, model: &str) -> Result<()> {
     let token_count = tokens::count_tokens(&content)?;
     let lines = content.lines().count();
 
+    let crate_name = detect_crate_name();
+    let module_path = file_to_module_path(file);
+
     println!("Generating tests for {file} ({lines} lines, {token_count} tokens) via {model}...");
     eprint!("  analyzing... ");
 
-    let test_code = openrouter::chat(model, TEST_PROMPT, &content)?;
+    let prompt = format!(
+        "Crate name: {crate_name}\nModule path: {module_path}\n\
+         Import as: use {crate_name}::{module_path}::*;\n\n\
+         Source file ({file}):\n{content}"
+    );
+    let test_code = openrouter::chat(model, TEST_PROMPT, &prompt)?;
     let test_code = strip_markdown_fences(&test_code);
     eprintln!("done");
 
@@ -187,6 +198,29 @@ fn try_compile(test_file: &str) {
     }
 }
 
+fn detect_crate_name() -> String {
+    std::fs::read_to_string("Cargo.toml")
+        .ok()
+        .and_then(|s| {
+            s.lines()
+                .find(|l| l.starts_with("name"))
+                .and_then(|l| l.split('"').nth(1))
+                .map(|n| n.replace('-', "_"))
+        })
+        .unwrap_or_else(|| "crate_name".to_string())
+}
+
+fn file_to_module_path(file: &str) -> String {
+    file.strip_prefix("src/")
+        .unwrap_or(file)
+        .strip_suffix(".rs")
+        .unwrap_or(file)
+        .replace('/', "::")
+        .replace("mod", "")
+        .trim_end_matches("::")
+        .to_string()
+}
+
 fn strip_markdown_fences(s: &str) -> String {
     // Extract code from within ```rust ... ``` blocks, even if there's text around them
     if let Some(start) = s.find("```rust").or_else(|| s.find("```rs")).or_else(|| s.find("```")) {
@@ -199,4 +233,69 @@ fn strip_markdown_fences(s: &str) -> String {
         return code_section.trim().to_string();
     }
     s.trim().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_strip_markdown_fences_plain() {
+        assert_eq!(strip_markdown_fences("fn main() {}"), "fn main() {}");
+    }
+
+    #[test]
+    fn test_strip_markdown_fences_rust_block() {
+        let input = "```rust\nfn main() {}\n```";
+        assert_eq!(strip_markdown_fences(input), "fn main() {}");
+    }
+
+    #[test]
+    fn test_strip_markdown_fences_with_preamble() {
+        let input = "Here are the tests:\n```rust\nfn test() {}\n```\n";
+        assert_eq!(strip_markdown_fences(input), "fn test() {}");
+    }
+
+    #[test]
+    fn test_strip_markdown_fences_generic_block() {
+        let input = "```\nfn main() {}\n```";
+        assert_eq!(strip_markdown_fences(input), "fn main() {}");
+    }
+
+    #[test]
+    fn test_strip_markdown_fences_rs_block() {
+        let input = "```rs\nfn main() {}\n```";
+        assert_eq!(strip_markdown_fences(input), "fn main() {}");
+    }
+
+    #[test]
+    fn test_detect_crate_name() {
+        let name = detect_crate_name();
+        assert_eq!(name, "cargo_syntax");
+    }
+
+    #[test]
+    fn test_file_to_module_path_simple() {
+        assert_eq!(file_to_module_path("src/tokens.rs"), "tokens");
+    }
+
+    #[test]
+    fn test_file_to_module_path_nested() {
+        assert_eq!(file_to_module_path("src/commands/ci.rs"), "commands::ci");
+    }
+
+    #[test]
+    fn test_file_to_module_path_no_src_prefix() {
+        assert_eq!(file_to_module_path("lib.rs"), "lib");
+    }
+
+    #[test]
+    fn test_default_test_path() {
+        assert_eq!(default_test_path("src/tokens.rs"), "tests/test_tokens.rs");
+    }
+
+    #[test]
+    fn test_default_test_path_nested() {
+        assert_eq!(default_test_path("src/commands/ci.rs"), "tests/test_ci.rs");
+    }
 }
