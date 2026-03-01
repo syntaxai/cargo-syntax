@@ -1,4 +1,5 @@
 mod commands;
+mod openrouter;
 mod templates;
 pub mod tokens;
 
@@ -44,6 +45,14 @@ enum Command {
     },
     /// Analyze files and suggest token-efficiency improvements
     Suggest,
+    /// AI-powered rewrite of a file for token efficiency (via OpenRouter)
+    Rewrite {
+        /// Rust file to rewrite
+        file: String,
+        /// OpenRouter model to use
+        #[arg(long, default_value = "deepseek/deepseek-chat")]
+        model: String,
+    },
 }
 
 fn main() -> Result<()> {
@@ -58,5 +67,6 @@ fn main() -> Result<()> {
         Command::Apply => commands::apply::run(),
         Command::Top { n } => commands::top::run(n),
         Command::Suggest => commands::suggest::run(),
+        Command::Rewrite { file, model } => commands::rewrite::run(&file, &model),
     }
 }
