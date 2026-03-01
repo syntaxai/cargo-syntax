@@ -42,6 +42,8 @@ enum Command {
         #[arg(default_value = "10")]
         n: usize,
     },
+    /// Analyze files and suggest token-efficiency improvements
+    Suggest,
 }
 
 fn main() -> Result<()> {
@@ -55,5 +57,6 @@ fn main() -> Result<()> {
         Command::Badge => commands::badge::run(),
         Command::Apply => commands::apply::run(),
         Command::Top { n } => commands::top::run(n),
+        Command::Suggest => commands::suggest::run(),
     }
 }
