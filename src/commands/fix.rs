@@ -1,19 +1,28 @@
 use std::process::Command;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use crate::tokens;
 
 pub fn run() -> Result<()> {
-    let before = tokens::count_src_tokens()?;
+    let before = {
+        let stats = tokens::scan_project()?;
+        stats.total_tokens
+    };
 
     println!("Running clippy --fix...");
-    Command::new("cargo").args(["clippy", "--fix", "--allow-dirty", "--allow-no-vcs"]).status()?;
+    Command::new("cargo")
+        .args(["clippy", "--fix", "--allow-dirty", "--allow-no-vcs"])
+        .status()
+        .context("failed to run cargo clippy --fix")?;
 
     println!("Running fmt...");
-    Command::new("cargo").args(["fmt"]).status()?;
+    Command::new("cargo").args(["fmt"]).status().context("failed to run cargo fmt")?;
 
-    let after = tokens::count_src_tokens()?;
+    let after = {
+        let stats = tokens::scan_project()?;
+        stats.total_tokens
+    };
     let diff = before as isize - after as isize;
 
     println!();

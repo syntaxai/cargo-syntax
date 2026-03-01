@@ -68,9 +68,7 @@ pub fn run(file: &str, model: &str) -> Result<()> {
 
     println!();
     println!("Changes:");
-    let explain_input = format!(
-        "ORIGINAL:\n{original}\n\nREWRITTEN:\n{clean}"
-    );
+    let explain_input = format!("ORIGINAL:\n{original}\n\nREWRITTEN:\n{clean}");
     match openrouter::chat(model, EXPLAIN_PROMPT, &explain_input) {
         Ok(explanation) => {
             for line in explanation.lines() {
@@ -120,11 +118,7 @@ fn strip_markdown_fences(s: &str) -> String {
             .or_else(|| trimmed.strip_prefix("```rs"))
             .or_else(|| trimmed.strip_prefix("```"))
             .unwrap_or(trimmed);
-        without_opening
-            .strip_suffix("```")
-            .unwrap_or(without_opening)
-            .trim()
-            .to_string()
+        without_opening.strip_suffix("```").unwrap_or(without_opening).trim().to_string()
     } else {
         trimmed.to_string()
     }

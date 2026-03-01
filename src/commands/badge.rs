@@ -3,21 +3,17 @@ use anyhow::Result;
 use crate::tokens;
 
 pub fn run() -> Result<()> {
-    let total_tokens = tokens::count_src_tokens()?;
-    let total_lines = tokens::count_src_lines()?;
-    let ratio = if total_lines > 0 { total_tokens as f64 / total_lines as f64 } else { 0.0 };
-
-    let (grade, color) = match ratio {
-        r if r <= 5.0 => ("A%2B", "brightgreen"),
-        r if r <= 7.0 => ("A", "green"),
-        r if r <= 9.0 => ("B", "blue"),
-        r if r <= 12.0 => ("C", "orange"),
-        _ => ("D", "red"),
+    let stats = tokens::scan_project()?;
+    let ratio = if stats.total_lines > 0 {
+        stats.total_tokens as f64 / stats.total_lines as f64
+    } else {
+        0.0
     };
 
-    let badge_url = format!(
-        "https://img.shields.io/badge/token_efficiency-{grade}%20({ratio:.1}%20T/L)-{color}"
-    );
+    let (grade, color, _) = tokens::efficiency_grade(ratio);
+
+    let badge_url =
+        format!("https://img.shields.io/badge/token_efficiency-{grade}%20({ratio:.1}%20T/L)-{color}");
     let link = "https://github.com/syntaxai/cargo-syntax";
 
     println!("Markdown:");

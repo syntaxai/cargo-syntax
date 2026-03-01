@@ -53,9 +53,7 @@ struct ModelsResponse {
 
 pub fn list_models() -> Result<Vec<Model>> {
     let agent = ureq::Agent::new_with_config(
-        ureq::config::Config::builder()
-            .http_status_as_error(false)
-            .build(),
+        ureq::config::Config::builder().http_status_as_error(false).build(),
     );
 
     let mut response = agent.get(MODELS_URL).call()?;
@@ -71,8 +69,9 @@ pub fn list_models() -> Result<Vec<Model>> {
 }
 
 pub fn chat(model: &str, system: &str, prompt: &str) -> Result<String> {
-    let key = std::env::var("OPENROUTER_API_KEY")
-        .map_err(|_| anyhow::anyhow!("OPENROUTER_API_KEY not set — get one at https://openrouter.ai/keys"))?;
+    let key = std::env::var("OPENROUTER_API_KEY").map_err(|_| {
+        anyhow::anyhow!("OPENROUTER_API_KEY not set — get one at https://openrouter.ai/keys")
+    })?;
 
     let body = Request {
         model: model.to_string(),
@@ -83,9 +82,7 @@ pub fn chat(model: &str, system: &str, prompt: &str) -> Result<String> {
     };
 
     let agent = ureq::Agent::new_with_config(
-        ureq::config::Config::builder()
-            .http_status_as_error(false)
-            .build(),
+        ureq::config::Config::builder().http_status_as_error(false).build(),
     );
 
     let mut response = agent

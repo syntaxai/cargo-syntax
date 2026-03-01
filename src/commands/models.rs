@@ -13,9 +13,7 @@ pub fn run(search: Option<&str>) -> Result<()> {
         let q = query.to_lowercase();
         models.retain(|m| m.id.to_lowercase().contains(&q) || m.name.to_lowercase().contains(&q));
     } else {
-        let code_keywords = [
-            "deepseek", "codestral", "coder", "qwen", "claude", "gpt-4", "gemini",
-        ];
+        let code_keywords = ["deepseek", "codestral", "coder", "qwen", "claude", "gpt-4", "gemini"];
         models.retain(|m| {
             let id = m.id.to_lowercase();
             code_keywords.iter().any(|k| id.contains(k))
@@ -28,10 +26,7 @@ pub fn run(search: Option<&str>) -> Result<()> {
         cost_a.partial_cmp(&cost_b).unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    println!(
-        "{:<50} {:>10} {:>12} {:>12}",
-        "Model ID", "Context", "Input/M", "Output/M"
-    );
+    println!("{:<50} {:>10} {:>12} {:>12}", "Model ID", "Context", "Input/M", "Output/M");
     println!("{}", "─".repeat(86));
 
     for model in &models {
@@ -60,10 +55,26 @@ pub fn run(search: Option<&str>) -> Result<()> {
 
 fn print_recommendations(models: &[openrouter::Model]) {
     let picks: &[(&str, &str, &[&str])] = &[
-        ("Free", "free, good for trying out", &["qwen/qwen3-coder:free", "deepseek/deepseek-chat:free"]),
-        ("Cheap", "best value for code tasks", &["deepseek/deepseek-chat", "deepseek/deepseek-chat-v3-0324"]),
-        ("Best", "highest quality rewrites", &["anthropic/claude-sonnet-4", "anthropic/claude-sonnet-4.5"]),
-        ("Large", "1M+ context for huge files", &["google/gemini-2.5-flash", "google/gemini-2.5-pro"]),
+        (
+            "Free",
+            "free, good for trying out",
+            &["qwen/qwen3-coder:free", "deepseek/deepseek-chat:free"],
+        ),
+        (
+            "Cheap",
+            "best value for code tasks",
+            &["deepseek/deepseek-chat", "deepseek/deepseek-chat-v3-0324"],
+        ),
+        (
+            "Best",
+            "highest quality rewrites",
+            &["anthropic/claude-sonnet-4", "anthropic/claude-sonnet-4.5"],
+        ),
+        (
+            "Large",
+            "1M+ context for huge files",
+            &["google/gemini-2.5-flash", "google/gemini-2.5-pro"],
+        ),
     ];
 
     println!();
@@ -84,21 +95,23 @@ fn prompt_cost(model: &openrouter::Model) -> Option<f64> {
 }
 
 fn format_context(model: &openrouter::Model) -> String {
-    model.context_length.map(|c| format!("{c}")).unwrap_or_else(|| "—".to_string())
+    model.context_length.map_or_else(|| "—".to_string(), |c| c.to_string())
 }
 
 fn format_input_cost(model: &openrouter::Model) -> String {
-    model.pricing.as_ref()
+    model
+        .pricing
+        .as_ref()
         .and_then(|p| p.prompt.as_ref())
         .and_then(|s| s.parse::<f64>().ok())
-        .map(|v| format!("${:.4}", v * 1_000_000.0))
-        .unwrap_or_else(|| "—".to_string())
+        .map_or_else(|| "—".to_string(), |v| format!("${:.4}", v * 1e6))
 }
 
 fn format_output_cost(model: &openrouter::Model) -> String {
-    model.pricing.as_ref()
+    model
+        .pricing
+        .as_ref()
         .and_then(|p| p.completion.as_ref())
         .and_then(|s| s.parse::<f64>().ok())
-        .map(|v| format!("${:.4}", v * 1_000_000.0))
-        .unwrap_or_else(|| "—".to_string())
+        .map_or_else(|| "—".to_string(), |v| format!("${:.4}", v * 1e6))
 }

@@ -4,7 +4,6 @@ use std::process::{Command, Stdio};
 
 use anyhow::{Result, bail};
 use serde::Deserialize;
-use tiktoken_rs::o200k_base;
 
 use crate::tokens;
 
@@ -159,7 +158,12 @@ pub fn run() -> Result<()> {
         return Ok(());
     }
 
-    let file_ratios = build_ratio_map()?;
+    let stats = tokens::scan_project()?;
+    let ratio_map: HashMap<String, f64> = stats
+        .files
+        .iter()
+        .map(|f| (normalize(&f.path), f.ratio))
+        .collect();
 
     let mut files: Vec<(String, Vec<Hint>)> = suggestions.into_iter().collect();
     files.sort_by(|a, b| b.1.len().cmp(&a.1.len()));
@@ -172,9 +176,9 @@ pub fn run() -> Result<()> {
         let count = hints.len();
         let label = if count == 1 { "suggestion" } else { "suggestions" };
 
-        let ratio = file_ratios
+        let ratio = ratio_map
             .iter()
-            .find(|(k, _)| normalize(k) == *file || normalize(k).ends_with(&format!("/{file}")))
+            .find(|(k, _)| *k == file || k.ends_with(&format!("/{file}")))
             .map(|(_, v)| *v);
 
         match ratio {
@@ -197,21 +201,4 @@ pub fn run() -> Result<()> {
 
 fn normalize(path: &str) -> String {
     path.replace('\\', "/").trim_start_matches("./").to_string()
-}
-
-fn build_ratio_map() -> Result<HashMap<String, f64>> {
-    let bpe = o200k_base()?;
-    let mut map = HashMap::new();
-
-    for entry in tokens::rust_file_walker() {
-        let path = entry.path();
-        let content = std::fs::read_to_string(path).unwrap_or_default();
-        let lines = content.lines().count();
-        let toks = bpe.encode_with_special_tokens(&content).len();
-        let ratio = if lines > 0 { toks as f64 / lines as f64 } else { 0.0 };
-        let key = normalize(&path.display().to_string());
-        map.insert(key, ratio);
-    }
-
-    Ok(map)
 }

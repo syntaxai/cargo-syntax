@@ -49,18 +49,18 @@ enum Command {
     Rewrite {
         /// Rust file to rewrite
         file: String,
-        /// OpenRouter model to use
-        #[arg(long, default_value = "deepseek/deepseek-chat")]
-        model: String,
+        /// OpenRouter model (default: deepseek/deepseek-chat, override with CARGO_SYNTAX_MODEL)
+        #[arg(long)]
+        model: Option<String>,
     },
     /// AI-powered review of the top N most token-heavy files (via OpenRouter)
     Review {
         /// Number of files to review (default: 5)
         #[arg(default_value = "5")]
         n: usize,
-        /// OpenRouter model to use
-        #[arg(long, default_value = "deepseek/deepseek-chat")]
-        model: String,
+        /// OpenRouter model (default: deepseek/deepseek-chat, override with CARGO_SYNTAX_MODEL)
+        #[arg(long)]
+        model: Option<String>,
     },
     /// List available OpenRouter models for code tasks
     Models {
@@ -81,8 +81,14 @@ fn main() -> Result<()> {
         Command::Apply => commands::apply::run(),
         Command::Top { n } => commands::top::run(n),
         Command::Suggest => commands::suggest::run(),
-        Command::Rewrite { file, model } => commands::rewrite::run(&file, &model),
-        Command::Review { n, model } => commands::review::run(n, &model),
+        Command::Rewrite { file, model } => {
+            let model = model.unwrap_or_else(tokens::default_model);
+            commands::rewrite::run(&file, &model)
+        }
+        Command::Review { n, model } => {
+            let model = model.unwrap_or_else(tokens::default_model);
+            commands::review::run(n, &model)
+        }
         Command::Models { search } => commands::models::run(search.as_deref()),
     }
 }
