@@ -106,6 +106,32 @@ enum Command {
         #[arg(long)]
         model: Option<String>,
     },
+    /// CI/CD mode: enforce token budgets and exit with status code
+    Ci {
+        /// Fail if total tokens exceed this limit
+        #[arg(long)]
+        max_tokens: Option<usize>,
+        /// Fail if T/L ratio exceeds this value
+        #[arg(long)]
+        max_tl: Option<f64>,
+        /// Fail if efficiency grade is below this (A+, A, B, C, D)
+        #[arg(long)]
+        min_grade: Option<String>,
+        /// Output results as JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Show token efficiency trends over git history
+    History {
+        /// Number of commits to analyze (default: 10)
+        #[arg(default_value = "10")]
+        n: usize,
+    },
+    /// Compare token efficiency between current branch and another
+    Compare {
+        /// Branch to compare against (e.g. "main", "develop")
+        branch: String,
+    },
     /// List available OpenRouter models for code tasks
     Models {
         /// Filter models by name or ID (e.g. "deepseek", "claude", "gemini")
@@ -149,6 +175,11 @@ fn main() -> Result<()> {
             let model = model.unwrap_or_else(tokens::default_model);
             commands::batch::run(n, validate, auto, &model)
         }
+        Command::Ci { max_tokens, max_tl, min_grade, json } => {
+            commands::ci::run(max_tokens, max_tl, min_grade.as_deref(), json)
+        }
+        Command::History { n } => commands::history::run(n),
+        Command::Compare { branch } => commands::compare::run(&branch),
         Command::Models { search } => commands::models::run(search.as_deref()),
     }
 }

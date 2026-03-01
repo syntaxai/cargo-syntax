@@ -311,6 +311,75 @@ Overall: well-structured with minor duplication opportunities
 2 pattern(s) found, ~125 tokens saveable (0.8% of project)
 ```
 
+### `cargo syntax ci`
+
+CI/CD mode: scan the project and enforce token budgets. Exits with code 1 on failure, perfect for CI pipelines.
+
+```bash
+cargo syntax ci                                    # just report stats
+cargo syntax ci --max-tokens 20000                 # fail if over 20K tokens
+cargo syntax ci --max-tl 8.0                       # fail if T/L ratio > 8.0
+cargo syntax ci --min-grade B                      # fail if grade below B
+cargo syntax ci --max-tokens 20000 --json          # JSON output for CI parsing
+```
+
+```
+cargo syntax ci: 23 files, 19090 tokens, 7.4 T/L, grade B
+PASS
+```
+
+Add to your CI pipeline (GitHub Actions example):
+
+```yaml
+- run: cargo syntax ci --max-tokens 25000 --min-grade B
+```
+
+### `cargo syntax history [n]`
+
+Show token efficiency trends over git history. Scans the last N commits to see how your token count has evolved.
+
+```bash
+cargo syntax history        # last 10 commits
+cargo syntax history 5      # last 5 commits
+```
+
+```
+Scanning 5 commits for token trends...
+
+Commit     Files   Tokens  Lines    T/L  Message
+───────────────────────────────────────────────────────────────────────────
+07048ed       17    12329   1672   7.4  feat: add --fix flag to car...
+1eb533b       18    13633   1826   7.5  feat: add cargo syntax batc...
+53294cf       19    15134   2053   7.4  feat: add cargo syntax expl...
+21dd654       19    15134   2053   7.4  docs: update README with al...
+d10aefc       20    16116   2201   7.3  feat: add cargo syntax refa...
+
+Trend: +3787 tokens (+30.7%) over 5 commits
+```
+
+### `cargo syntax compare <branch>`
+
+Compare token efficiency between your current branch and another branch or commit.
+
+```bash
+cargo syntax compare main               # compare current vs main
+cargo syntax compare 07048ed            # compare current vs specific commit
+```
+
+```
+Comparing token efficiency: master vs 07048ed
+
+                         master    07048ed
+──────────────────────────────────────────
+Files                        23         17
+Lines                      2597       1672
+Tokens                    19090      12329
+T/L ratio                   7.4        7.4
+Grade                         B          B
+
+Current branch uses +6761 more tokens (54.8% less efficient)
+```
+
 ### `cargo syntax models [search]`
 
 List available OpenRouter models, sorted by price. Without arguments, shows popular code models. Pass a search term to filter.
