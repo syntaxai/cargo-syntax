@@ -48,22 +48,14 @@ pub fn run(branch: &str) -> Result<()> {
         }
     };
 
-    let cur_ratio = if current_stats.lines > 0 {
-        current_stats.tokens as f64 / current_stats.lines as f64
-    } else {
-        0.0
-    };
-    let tgt_ratio = if target_stats.lines > 0 {
-        target_stats.tokens as f64 / target_stats.lines as f64
-    } else {
-        0.0
-    };
+    let cur_ratio = tokens::ratio(current_stats.tokens, current_stats.lines);
+    let tgt_ratio = tokens::ratio(target_stats.tokens, target_stats.lines);
 
     let (_, _, cur_grade) = tokens::efficiency_grade(cur_ratio);
     let (_, _, tgt_grade) = tokens::efficiency_grade(tgt_ratio);
 
     println!("{:<20} {:>10} {:>10} {:>10}", "", &current_stats.name, &target_stats.name, "Delta");
-    println!("{}", "─".repeat(52));
+    tokens::separator(52);
     print_row("Files", current_stats.files, target_stats.files);
     print_row("Lines", current_stats.lines, target_stats.lines);
     print_row("Tokens", current_stats.tokens, target_stats.tokens);

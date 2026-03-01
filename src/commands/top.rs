@@ -17,11 +17,7 @@ pub fn run(n: usize) -> Result<()> {
     println!("{}", "-".repeat(84));
 
     for (i, f) in stats.files.iter().take(show).enumerate() {
-        let pct = if stats.total_tokens > 0 {
-            (f.tokens as f64 / stats.total_tokens as f64) * 100.0
-        } else {
-            0.0
-        };
+        let pct = tokens::pct(f.tokens, stats.total_tokens);
         println!(
             "{:<4} {:<50} {:>6} {:>8} {:>5.1} {:>6.1}%",
             i + 1,
@@ -34,11 +30,7 @@ pub fn run(n: usize) -> Result<()> {
     }
 
     let top_tokens: usize = stats.files.iter().take(show).map(|f| f.tokens).sum();
-    let top_pct = if stats.total_tokens > 0 {
-        (top_tokens as f64 / stats.total_tokens as f64) * 100.0
-    } else {
-        0.0
-    };
+    let top_pct = tokens::pct(top_tokens, stats.total_tokens);
 
     println!("{}", "-".repeat(84));
     println!("Top {show} = {top_tokens} tokens ({top_pct:.1}% of {} total)", stats.total_tokens);

@@ -119,9 +119,9 @@ pub fn run(file: &str, output: Option<&str>, model: &str) -> Result<()> {
     }
 
     println!();
-    println!("{}", "─".repeat(70));
+    tokens::separator(70);
     println!("{test_code}");
-    println!("{}", "─".repeat(70));
+    tokens::separator(70);
 
     // Determine output path
     let target = if let Some(out) = output { out.to_string() } else { default_test_path(file) };
@@ -240,62 +240,39 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_strip_markdown_fences_plain() {
-        assert_eq!(strip_markdown_fences("fn main() {}"), "fn main() {}");
-    }
-
-    #[test]
-    fn test_strip_markdown_fences_rust_block() {
-        let input = "```rust\nfn main() {}\n```";
-        assert_eq!(strip_markdown_fences(input), "fn main() {}");
-    }
-
-    #[test]
-    fn test_strip_markdown_fences_with_preamble() {
-        let input = "Here are the tests:\n```rust\nfn test() {}\n```\n";
-        assert_eq!(strip_markdown_fences(input), "fn test() {}");
-    }
-
-    #[test]
-    fn test_strip_markdown_fences_generic_block() {
-        let input = "```\nfn main() {}\n```";
-        assert_eq!(strip_markdown_fences(input), "fn main() {}");
-    }
-
-    #[test]
-    fn test_strip_markdown_fences_rs_block() {
-        let input = "```rs\nfn main() {}\n```";
-        assert_eq!(strip_markdown_fences(input), "fn main() {}");
+    fn test_strip_markdown_fences() {
+        let cases = [
+            ("fn main() {}", "fn main() {}"),
+            ("```rust\nfn main() {}\n```", "fn main() {}"),
+            ("Here are the tests:\n```rust\nfn test() {}\n```\n", "fn test() {}"),
+            ("```\nfn main() {}\n```", "fn main() {}"),
+            ("```rs\nfn main() {}\n```", "fn main() {}"),
+        ];
+        for (input, expected) in cases {
+            assert_eq!(strip_markdown_fences(input), expected, "input: {input:?}");
+        }
     }
 
     #[test]
     fn test_detect_crate_name() {
-        let name = detect_crate_name();
-        assert_eq!(name, "cargo_syntax");
+        assert_eq!(detect_crate_name(), "cargo_syntax");
     }
 
     #[test]
-    fn test_file_to_module_path_simple() {
-        assert_eq!(file_to_module_path("src/tokens.rs"), "tokens");
-    }
-
-    #[test]
-    fn test_file_to_module_path_nested() {
-        assert_eq!(file_to_module_path("src/commands/ci.rs"), "commands::ci");
-    }
-
-    #[test]
-    fn test_file_to_module_path_no_src_prefix() {
-        assert_eq!(file_to_module_path("lib.rs"), "lib");
+    fn test_file_to_module_path() {
+        for (input, expected) in
+            [("src/tokens.rs", "tokens"), ("src/commands/ci.rs", "commands::ci"), ("lib.rs", "lib")]
+        {
+            assert_eq!(file_to_module_path(input), expected, "input: {input}");
+        }
     }
 
     #[test]
     fn test_default_test_path() {
-        assert_eq!(default_test_path("src/tokens.rs"), "tests/test_tokens.rs");
-    }
-
-    #[test]
-    fn test_default_test_path_nested() {
-        assert_eq!(default_test_path("src/commands/ci.rs"), "tests/test_ci.rs");
+        for (input, expected) in
+            [("src/tokens.rs", "tests/test_tokens.rs"), ("src/commands/ci.rs", "tests/test_ci.rs")]
+        {
+            assert_eq!(default_test_path(input), expected, "input: {input}");
+        }
     }
 }

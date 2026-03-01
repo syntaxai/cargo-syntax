@@ -118,17 +118,13 @@ pub fn run(model: &str) -> Result<()> {
         total_saveable += p.tokens_saved;
     }
 
-    println!("{}", "─".repeat(70));
+    tokens::separator(70);
     println!("{}", result.summary);
 
     if total_saveable > 0 {
-        let pct = if stats.total_tokens > 0 {
-            (total_saveable as f64 / stats.total_tokens as f64) * 100.0
-        } else {
-            0.0
-        };
+        let save_pct = tokens::pct(total_saveable as usize, stats.total_tokens);
         println!(
-            "{} pattern(s) found, ~{total_saveable} tokens saveable ({pct:.1}% of project)",
+            "{} pattern(s) found, ~{total_saveable} tokens saveable ({save_pct:.1}% of project)",
             result.patterns.len()
         );
     }

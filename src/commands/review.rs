@@ -74,11 +74,7 @@ pub fn run(n: usize, model: &str) -> Result<()> {
     let mut total_estimated_savings = 0;
 
     for (i, f) in stats.files.iter().take(show).enumerate() {
-        let pct_of_total = if stats.total_tokens > 0 {
-            (f.tokens as f64 / stats.total_tokens as f64) * 100.0
-        } else {
-            0.0
-        };
+        let pct_of_total = tokens::pct(f.tokens, stats.total_tokens);
 
         println!(
             "  #{:<2} {}  ({} lines, {} tokens, T/L: {:.1}, {pct_of_total:.1}% of total)",
@@ -121,7 +117,7 @@ pub fn run(n: usize, model: &str) -> Result<()> {
 
                 if estimated > 0 {
                     let capped = (estimated as usize).min(f.tokens / 2);
-                    let est_pct = (capped as f64 / f.tokens as f64) * 100.0;
+                    let est_pct = tokens::pct(capped, f.tokens);
                     println!("      => est. savings: ~{capped} tokens ({est_pct:.1}%)");
                     total_estimated_savings += capped;
                 }
@@ -134,7 +130,7 @@ pub fn run(n: usize, model: &str) -> Result<()> {
         println!();
     }
 
-    println!("{}", "─".repeat(70));
+    tokens::separator(70);
 
     let top_tokens: usize = stats.files.iter().take(show).map(|f| f.tokens).sum();
     println!(
@@ -144,7 +140,7 @@ pub fn run(n: usize, model: &str) -> Result<()> {
     );
 
     if total_estimated_savings > 0 {
-        let total_pct = (total_estimated_savings as f64 / stats.total_tokens as f64) * 100.0;
+        let total_pct = tokens::pct(total_estimated_savings, stats.total_tokens);
         println!("Estimated total savings: ~{total_estimated_savings} tokens ({total_pct:.1}%)");
     }
 

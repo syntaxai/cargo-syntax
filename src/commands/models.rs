@@ -27,7 +27,7 @@ pub fn run(search: Option<&str>) -> Result<()> {
     });
 
     println!("{:<50} {:>10} {:>12} {:>12}", "Model ID", "Context", "Input/M", "Output/M");
-    println!("{}", "─".repeat(86));
+    crate::tokens::separator(86);
 
     for model in &models {
         println!(
@@ -98,20 +98,16 @@ fn format_context(model: &openrouter::Model) -> String {
     model.context_length.map_or_else(|| "—".to_string(), |c| c.to_string())
 }
 
-fn format_input_cost(model: &openrouter::Model) -> String {
-    model
-        .pricing
-        .as_ref()
-        .and_then(|p| p.prompt.as_ref())
+fn format_cost(price: Option<&String>) -> String {
+    price
         .and_then(|s| s.parse::<f64>().ok())
         .map_or_else(|| "—".to_string(), |v| format!("${:.4}", v * 1e6))
 }
 
+fn format_input_cost(model: &openrouter::Model) -> String {
+    format_cost(model.pricing.as_ref().and_then(|p| p.prompt.as_ref()))
+}
+
 fn format_output_cost(model: &openrouter::Model) -> String {
-    model
-        .pricing
-        .as_ref()
-        .and_then(|p| p.completion.as_ref())
-        .and_then(|s| s.parse::<f64>().ok())
-        .map_or_else(|| "—".to_string(), |v| format!("${:.4}", v * 1e6))
+    format_cost(model.pricing.as_ref().and_then(|p| p.completion.as_ref()))
 }

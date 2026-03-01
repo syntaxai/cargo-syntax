@@ -183,7 +183,7 @@ fn print_diff(original: &str, rewritten: &str) {
     let new_lines: Vec<&str> = rewritten.lines().collect();
     let max = old_lines.len().max(new_lines.len());
 
-    println!("{}", "─".repeat(70));
+    crate::tokens::separator(70);
     for i in 0..max {
         let old = old_lines.get(i).copied().unwrap_or("");
         let new = new_lines.get(i).copied().unwrap_or("");
@@ -196,5 +196,5 @@ fn print_diff(original: &str, rewritten: &str) {
             }
         }
     }
-    println!("{}", "─".repeat(70));
+    crate::tokens::separator(70);
 }

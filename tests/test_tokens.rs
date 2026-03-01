@@ -125,3 +125,17 @@ fn test_git_show_file_valid() {
 fn test_git_show_file_invalid() {
     assert!(git_show_file("HEAD", "nonexistent_file.rs").is_err());
 }
+
+#[test]
+fn test_ratio() {
+    assert_eq!(ratio(100, 10), 10.0);
+    assert_eq!(ratio(0, 0), 0.0);
+    assert_eq!(ratio(50, 0), 0.0);
+}
+
+#[test]
+fn test_pct() {
+    assert_eq!(pct(50, 100), 50.0);
+    assert_eq!(pct(0, 100), 0.0);
+    assert_eq!(pct(10, 0), 0.0);
+}

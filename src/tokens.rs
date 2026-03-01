@@ -48,7 +48,7 @@ pub fn scan_project() -> Result<ProjectStats> {
 
         let tokens = bpe.encode_with_special_tokens(&content).len();
         let lines = content.lines().count();
-        let ratio = if lines > 0 { tokens as f64 / lines as f64 } else { 0.0 };
+        let ratio = ratio(tokens, lines);
 
         let (code, comments, blanks) = count_line_types(&content);
         code_lines += code;
@@ -107,6 +107,18 @@ pub fn efficiency_grade(ratio: f64) -> (&'static str, &'static str, &'static str
         r if r <= 12.0 => ("C", "orange", "C"),
         _ => ("D", "red", "D"),
     }
+}
+
+pub fn ratio(tokens: usize, lines: usize) -> f64 {
+    if lines > 0 { tokens as f64 / lines as f64 } else { 0.0 }
+}
+
+pub fn pct(part: usize, total: usize) -> f64 {
+    if total > 0 { (part as f64 / total as f64) * 100.0 } else { 0.0 }
+}
+
+pub fn separator(width: usize) {
+    println!("{}", "─".repeat(width));
 }
 
 pub fn default_model() -> String {

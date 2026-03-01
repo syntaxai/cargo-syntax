@@ -73,7 +73,7 @@ pub fn run(range: Option<&str>, staged: bool, fix: bool, model: &str) -> Result<
         let Ok(content) = std::fs::read_to_string(file) else { continue };
         let Ok(file_tokens) = tokens::count_tokens(&content) else { continue };
         let lines = content.lines().count();
-        let ratio = if lines > 0 { file_tokens as f64 / lines as f64 } else { 0.0 };
+        let ratio = tokens::ratio(file_tokens, lines);
 
         let file_diff = extract_file_diff(&diff_output, file);
         let added_lines = file_diff.lines().filter(|l| l.starts_with('+')).count();
@@ -124,19 +124,15 @@ pub fn run(range: Option<&str>, staged: bool, fix: bool, model: &str) -> Result<
         println!();
     }
 
-    println!("{}", "─".repeat(70));
+    tokens::separator(70);
     println!("Summary: {total_files} file(s) changed, ~+{total_added_tokens} tokens added");
 
     if efficient_files == total_files {
         println!("All changes look token-efficient. ✓");
     } else if total_saveable > 0 {
-        let pct = if total_added_tokens > 0 {
-            (total_saveable as f64 / total_added_tokens as f64) * 100.0
-        } else {
-            0.0
-        };
+        let save_pct = tokens::pct(total_saveable, total_added_tokens);
         println!(
-            "{total_suggestions} suggestion(s) could save ~{total_saveable} tokens ({pct:.0}%)"
+            "{total_suggestions} suggestion(s) could save ~{total_saveable} tokens ({save_pct:.0}%)"
         );
     }
 
@@ -177,15 +173,11 @@ fn run_git_diff(args: &[String]) -> Result<String> {
 }
 
 fn parse_changed_rs_files(diff: &str) -> Vec<String> {
-    let files = diff
-        .lines()
+    diff.lines()
         .filter_map(|line| {
-            line.strip_prefix("+++ b/")
-                .filter(|path| path.ends_with(".rs"))
-                .map(std::string::ToString::to_string)
+            line.strip_prefix("+++ b/").filter(|path| path.ends_with(".rs")).map(String::from)
         })
-        .collect::<Vec<_>>();
-    files.into_iter().collect()
+        .collect()
 }
 
 fn extract_file_diff<'a>(full_diff: &'a str, file: &str) -> &'a str {

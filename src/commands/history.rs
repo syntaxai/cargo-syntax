@@ -57,10 +57,10 @@ pub fn run(n: usize) -> Result<()> {
         "{:<10} {:>5} {:>8} {:>6} {:>6}  Message",
         "Commit", "Files", "Tokens", "Lines", "T/L"
     );
-    println!("{}", "─".repeat(75));
+    tokens::separator(75);
 
     for s in snapshots.iter().rev() {
-        let ratio = if s.lines > 0 { s.tokens as f64 / s.lines as f64 } else { 0.0 };
+        let ratio = tokens::ratio(s.tokens, s.lines);
         println!(
             "{:<10} {:>5} {:>8} {:>6} {:>5.1}  {}",
             s.hash,

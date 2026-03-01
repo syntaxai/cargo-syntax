@@ -54,11 +54,7 @@ pub fn run(n: usize, validate: bool, auto: bool, model: &str) -> Result<()> {
         };
 
         let saved = result.saved();
-        let pct = if result.tokens_before > 0 {
-            (saved as f64 / result.tokens_before as f64) * 100.0
-        } else {
-            0.0
-        };
+        let pct = if saved > 0 { tokens::pct(saved as usize, result.tokens_before) } else { 0.0 };
 
         if saved <= 0 {
             println!("  No improvement ({saved:+} tokens). Skipping.");
@@ -105,14 +101,10 @@ pub fn run(n: usize, validate: bool, auto: bool, model: &str) -> Result<()> {
         println!();
     }
 
-    println!("{}", "─".repeat(70));
+    tokens::separator(70);
     println!("Batch complete: {rewritten} rewritten, {skipped} skipped, {failed} failed");
     if total_saved > 0 {
-        let total_pct = if stats.total_tokens > 0 {
-            (total_saved as f64 / stats.total_tokens as f64) * 100.0
-        } else {
-            0.0
-        };
+        let total_pct = tokens::pct(total_saved as usize, stats.total_tokens);
         println!("Total saved: ~{total_saved} tokens ({total_pct:.1}% of project)");
     }
 

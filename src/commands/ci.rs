@@ -1,6 +1,18 @@
 use anyhow::Result;
+use serde::Serialize;
 
 use crate::tokens;
+
+#[derive(Serialize)]
+struct CiOutput {
+    files: usize,
+    total_tokens: usize,
+    total_lines: usize,
+    ratio: f64,
+    grade: String,
+    pass: bool,
+    failures: Vec<String>,
+}
 
 pub fn run(
     max_tokens: Option<usize>,
@@ -9,12 +21,7 @@ pub fn run(
     json: bool,
 ) -> Result<()> {
     let stats = tokens::scan_project()?;
-
-    let avg_ratio = if stats.total_lines > 0 {
-        stats.total_tokens as f64 / stats.total_lines as f64
-    } else {
-        0.0
-    };
+    let avg_ratio = tokens::ratio(stats.total_tokens, stats.total_lines);
 
     let (_, _, grade) = tokens::efficiency_grade(avg_ratio);
     let mut failures: Vec<String> = Vec::new();
@@ -62,24 +69,16 @@ fn grade_rank(grade: &str) -> u8 {
 }
 
 fn print_json(stats: &tokens::ProjectStats, avg_ratio: f64, grade: &str, failures: &[String]) {
-    println!("{{");
-    println!("  \"files\": {},", stats.files.len());
-    println!("  \"total_tokens\": {},", stats.total_tokens);
-    println!("  \"total_lines\": {},", stats.total_lines);
-    println!("  \"ratio\": {avg_ratio:.2},");
-    println!("  \"grade\": \"{grade}\",");
-    println!("  \"pass\": {},", failures.is_empty());
-    if !failures.is_empty() {
-        println!("  \"failures\": [");
-        for (i, f) in failures.iter().enumerate() {
-            let comma = if i + 1 < failures.len() { "," } else { "" };
-            println!("    \"{f}\"{comma}");
-        }
-        println!("  ]");
-    } else {
-        println!("  \"failures\": []");
-    }
-    println!("}}");
+    let output = CiOutput {
+        files: stats.files.len(),
+        total_tokens: stats.total_tokens,
+        total_lines: stats.total_lines,
+        ratio: (avg_ratio * 100.0).round() / 100.0,
+        grade: grade.to_string(),
+        pass: failures.is_empty(),
+        failures: failures.to_vec(),
+    };
+    println!("{}", serde_json::to_string_pretty(&output).unwrap_or_default());
 }
 
 fn print_human(stats: &tokens::ProjectStats, avg_ratio: f64, grade: &str, failures: &[String]) {
@@ -107,42 +106,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_grade_rank_a_plus() {
-        assert_eq!(grade_rank("A+"), 5);
-    }
-
-    #[test]
-    fn test_grade_rank_a() {
-        assert_eq!(grade_rank("A"), 4);
-    }
-
-    #[test]
-    fn test_grade_rank_b() {
-        assert_eq!(grade_rank("B"), 3);
-    }
-
-    #[test]
-    fn test_grade_rank_c() {
-        assert_eq!(grade_rank("C"), 2);
-    }
-
-    #[test]
-    fn test_grade_rank_d() {
-        assert_eq!(grade_rank("D"), 1);
-    }
-
-    #[test]
-    fn test_grade_rank_unknown() {
-        assert_eq!(grade_rank("X"), 0);
-        assert_eq!(grade_rank(""), 0);
+    fn test_grade_rank_values() {
+        for (grade, expected) in
+            [("A+", 5), ("A", 4), ("B", 3), ("C", 2), ("D", 1), ("X", 0), ("", 0)]
+        {
+            assert_eq!(grade_rank(grade), expected, "grade_rank({grade:?})");
+        }
     }
 
     #[test]
     fn test_grade_rank_ordering() {
-        assert!(grade_rank("A+") > grade_rank("A"));
-        assert!(grade_rank("A") > grade_rank("B"));
-        assert!(grade_rank("B") > grade_rank("C"));
-        assert!(grade_rank("C") > grade_rank("D"));
-        assert!(grade_rank("D") > grade_rank("X"));
+        let grades = ["A+", "A", "B", "C", "D", "X"];
+        for w in grades.windows(2) {
+            assert!(grade_rank(w[0]) > grade_rank(w[1]), "{} should rank above {}", w[0], w[1]);
+        }
     }
 }

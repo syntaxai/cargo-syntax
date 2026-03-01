@@ -12,11 +12,7 @@ pub fn run() -> Result<()> {
         println!("{:<60} {:>6} {:>8} {:>5.1}", f.path, f.lines, f.tokens, f.ratio);
     }
 
-    let avg_ratio = if stats.total_lines > 0 {
-        stats.total_tokens as f64 / stats.total_lines as f64
-    } else {
-        0.0
-    };
+    let avg_ratio = tokens::ratio(stats.total_tokens, stats.total_lines);
 
     println!("{}", "-".repeat(83));
     println!(

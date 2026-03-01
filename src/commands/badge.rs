@@ -4,11 +4,7 @@ use crate::tokens;
 
 pub fn run() -> Result<()> {
     let stats = tokens::scan_project()?;
-    let ratio = if stats.total_lines > 0 {
-        stats.total_tokens as f64 / stats.total_lines as f64
-    } else {
-        0.0
-    };
+    let ratio = tokens::ratio(stats.total_tokens, stats.total_lines);
 
     let (grade, color, _) = tokens::efficiency_grade(ratio);
 
