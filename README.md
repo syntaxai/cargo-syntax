@@ -94,6 +94,40 @@ Code: 245 | Comments: 3 | Blanks: 23
 
 Token counts use OpenAI's `o200k_base` tokenizer (used by GPT-4o and similar models), giving you an accurate measure of how much context window your code occupies.
 
+### `cargo syntax rewrite <file>`
+
+AI-powered rewrite of a single file for token efficiency, using [OpenRouter](https://openrouter.ai).
+
+```bash
+export OPENROUTER_API_KEY="sk-or-v1-..."
+cargo syntax rewrite src/commands/audit.rs
+```
+
+Sends the file to an LLM, which rewrites it to be more token-efficient. Shows before/after stats, explains each change, and asks for confirmation before overwriting.
+
+```
+Sending src/commands/audit.rs to deepseek/deepseek-chat via OpenRouter...
+  67 lines, 504 tokens
+
+Result:
+  Lines:  67 → 52
+  Tokens: 504 → 421
+  Saved:  83 tokens (16.5%)
+
+Changes:
+  - Replaced manual loop with iterator chain in run() (~15 tokens)
+  - Inlined format args across 4 println! calls (~8 tokens)
+  - Collapsed if/else to single expression (~6 tokens)
+
+Accept? [y/n/diff]
+```
+
+Use `--model` to pick a different model:
+
+```bash
+cargo syntax rewrite src/main.rs --model google/gemini-2.5-flash
+```
+
 ## Clippy Lints
 
 `cargo-syntax` enforces three tiers of lints:
