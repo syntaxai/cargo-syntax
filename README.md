@@ -380,6 +380,45 @@ Grade                         B          B
 Current branch uses +6761 more tokens (54.8% less efficient)
 ```
 
+### `cargo syntax generate-tests <file>`
+
+AI-powered test generation for any Rust file. Analyzes public functions, generates comprehensive unit tests, and shows coverage analysis.
+
+```bash
+cargo syntax generate-tests src/tokens.rs                    # generate tests, write to tests/test_tokens.rs
+cargo syntax generate-tests src/commands/ci.rs -o my_tests.rs  # custom output path
+```
+
+```
+Generating tests for src/tokens.rs (138 lines, 1143 tokens) via deepseek/deepseek-chat...
+  analyzing... done
+  Generated: 146 lines, 1099 tokens
+
+  coverage analysis... done
+  Tests: 21
+  Covered: count_tokens, count_line_types, efficiency_grade, default_model, scan_project
+  Skipped: git_list_rs_files, git_show_file (need I/O/network)
+
+──────────────────────────────────────────────────────────────────────
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_count_tokens_empty_string() { ... }
+    #[test]
+    fn test_efficiency_grade_a_plus() { ... }
+    ...
+}
+──────────────────────────────────────────────────────────────────────
+
+Write to tests/test_tokens.rs? [y/n/append]
+```
+
+Options: `y` writes the file, `append` adds tests to an existing test file, `n` discards.
+After writing, automatically runs `cargo test --no-run` to verify the tests compile.
+
+Pair with `batch --validate` for safe AI rewrites: generate tests first, then rewrite with validation.
+
 ### `cargo syntax models [search]`
 
 List available OpenRouter models, sorted by price. Without arguments, shows popular code models. Pass a search term to filter.

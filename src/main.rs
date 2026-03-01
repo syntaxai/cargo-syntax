@@ -132,6 +132,17 @@ enum Command {
         /// Branch to compare against (e.g. "main", "develop")
         branch: String,
     },
+    /// AI-powered test generation for a Rust file
+    GenerateTests {
+        /// Rust file to generate tests for
+        file: String,
+        /// Output file (default: tests/test_<name>.rs)
+        #[arg(short, long)]
+        output: Option<String>,
+        /// OpenRouter model (default: deepseek/deepseek-chat, override with CARGO_SYNTAX_MODEL)
+        #[arg(long)]
+        model: Option<String>,
+    },
     /// List available OpenRouter models for code tasks
     Models {
         /// Filter models by name or ID (e.g. "deepseek", "claude", "gemini")
@@ -180,6 +191,10 @@ fn main() -> Result<()> {
         }
         Command::History { n } => commands::history::run(n),
         Command::Compare { branch } => commands::compare::run(&branch),
+        Command::GenerateTests { file, output, model } => {
+            let model = model.unwrap_or_else(tokens::default_model);
+            commands::generate_tests::run(&file, output.as_deref(), &model)
+        }
         Command::Models { search } => commands::models::run(search.as_deref()),
     }
 }
