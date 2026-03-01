@@ -207,3 +207,28 @@ pub fn run(deep: bool) -> Result<()> {
 fn normalize(path: &str) -> String {
     path.replace('\\', "/").trim_start_matches("./").to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_normalize_unix_path() {
+        assert_eq!(normalize("src/main.rs"), "src/main.rs");
+    }
+
+    #[test]
+    fn test_normalize_windows_path() {
+        assert_eq!(normalize("src\\commands\\audit.rs"), "src/commands/audit.rs");
+    }
+
+    #[test]
+    fn test_normalize_dotslash_prefix() {
+        assert_eq!(normalize("./src/main.rs"), "src/main.rs");
+    }
+
+    #[test]
+    fn test_normalize_dotslash_windows() {
+        assert_eq!(normalize(".\\src\\main.rs"), "src/main.rs");
+    }
+}

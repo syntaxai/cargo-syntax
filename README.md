@@ -1,6 +1,6 @@
 # cargo-syntax
 
-[![Token Efficiency](https://img.shields.io/badge/token_efficiency-B%20(7.7%20T/L)-blue)](https://github.com/syntaxai/cargo-syntax)
+[![Token Efficiency](https://img.shields.io/badge/token_efficiency-B%20(7.4%20T/L)-blue)](https://github.com/syntaxai/cargo-syntax)
 
 **Token-efficient Rust tooling by [syntax.ai](https://syntax.ai)**
 
@@ -579,11 +579,21 @@ cargo-syntax is tested with its own tooling. Run the full suite:
 cargo test
 ```
 
-**39 tests** covering:
-- `tokens` module: token counting, efficiency grades, project scanning, git helpers (23 integration tests)
+**58 tests** covering:
+- `tokens` module: token counting, efficiency grades, project scanning, git helpers, shared utilities (38 integration tests)
 - `deep` module: normalization, hashing, similarity, function extraction, savings estimation (10 unit tests)
 - `ci` module: grade ranking and ordering (2 unit tests)
+- `suggest` module: path normalization for cross-platform compatibility (4 unit tests)
 - `generate_tests` module: crate/module detection, path generation, markdown fences (4 unit tests)
+
+## CI
+
+GitHub Actions runs on every push and PR:
+
+1. `cargo clippy --all-targets -- -D warnings`
+2. `cargo fmt --check`
+3. `cargo test`
+4. `cargo syntax ci --min-grade C`
 
 ## License
 

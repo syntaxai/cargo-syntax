@@ -139,3 +139,98 @@ fn test_pct() {
     assert_eq!(pct(0, 100), 0.0);
     assert_eq!(pct(10, 0), 0.0);
 }
+
+#[test]
+fn test_pct_delta_positive() {
+    assert_eq!(pct_delta(50, 100), 50.0);
+}
+
+#[test]
+fn test_pct_delta_negative() {
+    assert_eq!(pct_delta(-25, 100), -25.0);
+}
+
+#[test]
+fn test_pct_delta_zero_base() {
+    assert_eq!(pct_delta(10, 0), 0.0);
+}
+
+#[test]
+fn test_scan_project_sorted_descending() {
+    let stats = scan_project_sorted().unwrap();
+    for w in stats.files.windows(2) {
+        assert!(w[0].tokens >= w[1].tokens, "not sorted: {} < {}", w[0].tokens, w[1].tokens);
+    }
+}
+
+#[test]
+fn test_build_manifest_contains_files() {
+    let stats = scan_project().unwrap();
+    let manifest = build_manifest(&stats);
+    for f in &stats.files {
+        assert!(manifest.contains(&f.path), "manifest missing {}", f.path);
+    }
+}
+
+#[test]
+fn test_build_manifest_format() {
+    let stats = scan_project().unwrap();
+    let manifest = build_manifest(&stats);
+    assert!(manifest.contains("==="), "manifest missing === delimiters");
+    assert!(manifest.contains("tokens"), "manifest missing token counts");
+}
+
+#[test]
+fn test_read_rs_file_valid() {
+    let (content, tokens, lines) = read_rs_file("src/main.rs").unwrap();
+    assert!(content.contains("fn main"));
+    assert!(tokens > 0);
+    assert!(lines > 0);
+}
+
+#[test]
+fn test_read_rs_file_not_found() {
+    assert!(read_rs_file("nonexistent.rs").is_err());
+}
+
+#[test]
+fn test_read_rs_file_not_rs() {
+    assert!(read_rs_file("Cargo.toml").is_err());
+}
+
+#[test]
+fn test_count_rev_tokens_head() {
+    let rev = count_rev_tokens("HEAD").unwrap();
+    assert!(rev.files > 0);
+    assert!(rev.tokens > 0);
+    assert!(rev.lines > 0);
+}
+
+#[test]
+fn test_count_rev_tokens_invalid() {
+    assert!(count_rev_tokens("nonexistent_rev_xyz").is_err());
+}
+
+#[test]
+fn test_strip_markdown_fences_plain() {
+    assert_eq!(strip_markdown_fences("fn main() {}"), "fn main() {}");
+}
+
+#[test]
+fn test_strip_markdown_fences_rust() {
+    assert_eq!(strip_markdown_fences("```rust\nfn main() {}\n```"), "fn main() {}");
+}
+
+#[test]
+fn test_strip_markdown_fences_bare() {
+    assert_eq!(strip_markdown_fences("```\nfn main() {}\n```"), "fn main() {}");
+}
+
+#[test]
+fn test_suggestion_items_schema_has_required_fields() {
+    let schema = suggestion_items_schema();
+    let props = schema["properties"].as_object().unwrap();
+    assert!(props.contains_key("description"));
+    assert!(props.contains_key("location"));
+    assert!(props.contains_key("tokens_saved"));
+}
