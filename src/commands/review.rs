@@ -1,6 +1,6 @@
-use std::collections::HashSet;
-
 use anyhow::Result;
+use serde::Deserialize;
+use serde_json::json;
 
 use crate::{openrouter, tokens};
 
@@ -9,20 +9,58 @@ const DEFAULT_MAX_TOKENS: usize = 20_000;
 const REVIEW_PROMPT: &str = "\
 You are a Rust code auditor focused on token efficiency. \
 Analyze the given Rust file and list 3-8 DISTINCT improvements to reduce token count. \
-Rules: \
-1. Each suggestion must be fundamentally different (not variations of the same pattern). \
-2. Order by potential impact (highest savings first). \
-3. For each: describe the change, reference the function/line, estimate tokens saved with ~N. \
-4. Do NOT repeat the same suggestion for multiple occurrences — mention it once. \
-5. Format each as a single bullet line starting with -. \
-No markdown fences, no headers.";
+Each suggestion must be fundamentally different. Order by impact (highest savings first). \
+Do NOT repeat the same suggestion for multiple occurrences — mention it once.";
+
+#[derive(Deserialize)]
+struct ReviewResult {
+    suggestions: Vec<Suggestion>,
+}
+
+#[derive(Deserialize)]
+struct Suggestion {
+    description: String,
+    location: String,
+    tokens_saved: u32,
+}
+
+fn review_schema() -> serde_json::Value {
+    json!({
+        "type": "object",
+        "properties": {
+            "suggestions": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "description": {
+                            "type": "string",
+                            "description": "What to change and why it saves tokens"
+                        },
+                        "location": {
+                            "type": "string",
+                            "description": "Function name, line number, or code pattern"
+                        },
+                        "tokens_saved": {
+                            "type": "integer",
+                            "description": "Estimated number of tokens saved"
+                        }
+                    },
+                    "required": ["description", "location", "tokens_saved"],
+                    "additionalProperties": false
+                }
+            }
+        },
+        "required": ["suggestions"],
+        "additionalProperties": false
+    })
+}
 
 pub fn run(n: usize, model: &str) -> Result<()> {
     let mut stats = tokens::scan_project()?;
     stats.files.sort_by(|a, b| b.tokens.cmp(&a.tokens));
 
     let show = n.min(stats.files.len());
-
     let max_tokens = model_context_limit(model).unwrap_or(DEFAULT_MAX_TOKENS);
 
     println!("Scanning project... {} files, {} tokens total", stats.files.len(), stats.total_tokens);
@@ -52,19 +90,26 @@ pub fn run(n: usize, model: &str) -> Result<()> {
 
         eprint!("      [{}/{}] reviewing... ", i + 1, show);
 
-        match openrouter::chat(model, REVIEW_PROMPT, &f.content) {
-            Ok(analysis) => {
+        match openrouter::chat_json::<ReviewResult>(
+            model,
+            REVIEW_PROMPT,
+            &f.content,
+            "review_result",
+            review_schema(),
+        ) {
+            Ok(result) => {
                 eprintln!("done");
-                let deduped = deduplicate_suggestions(&analysis);
-                for line in &deduped {
-                    println!("      {line}");
+                let estimated: u32 = result.suggestions.iter().map(|s| s.tokens_saved).sum();
+
+                for s in &result.suggestions {
+                    println!("      - {} [{}] (~{} tokens)", s.description, s.location, s.tokens_saved);
                 }
 
-                let estimated = estimate_savings(&analysis, f.tokens);
                 if estimated > 0 {
-                    let est_pct = (estimated as f64 / f.tokens as f64) * 100.0;
-                    println!("      => est. savings: ~{estimated} tokens ({est_pct:.1}%)");
-                    total_estimated_savings += estimated;
+                    let capped = (estimated as usize).min(f.tokens / 2);
+                    let est_pct = (capped as f64 / f.tokens as f64) * 100.0;
+                    println!("      => est. savings: ~{capped} tokens ({est_pct:.1}%)");
+                    total_estimated_savings += capped;
                 }
             }
             Err(e) => {
@@ -102,58 +147,4 @@ fn model_context_limit(model: &str) -> Option<usize> {
     } else {
         None
     }
-}
-
-fn deduplicate_suggestions(analysis: &str) -> Vec<String> {
-    let mut seen = HashSet::new();
-    let mut result = Vec::new();
-
-    for line in analysis.lines() {
-        let trimmed = line.trim();
-        if trimmed.is_empty() {
-            continue;
-        }
-
-        let normalized: String = trimmed
-            .to_lowercase()
-            .chars()
-            .filter(|c| c.is_alphabetic() || c.is_whitespace())
-            .collect::<String>()
-            .split_whitespace()
-            .collect::<Vec<_>>()
-            .join(" ");
-
-        if normalized.len() < 10 {
-            continue;
-        }
-
-        if seen.iter().any(|s: &String| {
-            let overlap = normalized.chars().zip(s.chars()).take_while(|(a, b)| a == b).count();
-            overlap > normalized.len() / 2 && overlap > 20
-        }) {
-            continue;
-        }
-
-        seen.insert(normalized);
-        result.push(trimmed.to_string());
-    }
-
-    result
-}
-
-fn estimate_savings(analysis: &str, file_tokens: usize) -> usize {
-    let mut total = 0;
-
-    for line in analysis.lines() {
-        let lower = line.to_lowercase();
-        if let Some(pos) = lower.find('~') {
-            let after = &lower[pos + 1..];
-            let num: String = after.chars().take_while(char::is_ascii_digit).collect();
-            if let Ok(n) = num.parse::<usize>() {
-                total += n;
-            }
-        }
-    }
-
-    total.min(file_tokens / 2)
 }

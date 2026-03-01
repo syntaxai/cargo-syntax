@@ -1,5 +1,6 @@
 use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 const BASE_URL: &str = "https://openrouter.ai/api/v1/chat/completions";
 const MODELS_URL: &str = "https://openrouter.ai/api/v1/models";
@@ -8,6 +9,21 @@ const MODELS_URL: &str = "https://openrouter.ai/api/v1/models";
 struct Request {
     model: String,
     messages: Vec<Message>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    response_format: Option<ResponseFormat>,
+}
+
+#[derive(Serialize)]
+struct ResponseFormat {
+    r#type: String,
+    json_schema: JsonSchemaWrapper,
+}
+
+#[derive(Serialize)]
+struct JsonSchemaWrapper {
+    name: String,
+    strict: bool,
+    schema: Value,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -69,6 +85,31 @@ pub fn list_models() -> Result<Vec<Model>> {
 }
 
 pub fn chat(model: &str, system: &str, prompt: &str) -> Result<String> {
+    chat_with_format(model, system, prompt, None)
+}
+
+pub fn chat_json<T: serde::de::DeserializeOwned>(
+    model: &str,
+    system: &str,
+    prompt: &str,
+    schema_name: &str,
+    schema: Value,
+) -> Result<T> {
+    let format = ResponseFormat {
+        r#type: "json_schema".to_string(),
+        json_schema: JsonSchemaWrapper { name: schema_name.to_string(), strict: true, schema },
+    };
+
+    let raw = chat_with_format(model, system, prompt, Some(format))?;
+    serde_json::from_str(&raw).map_err(|e| anyhow::anyhow!("Failed to parse structured response: {e}"))
+}
+
+fn chat_with_format(
+    model: &str,
+    system: &str,
+    prompt: &str,
+    response_format: Option<ResponseFormat>,
+) -> Result<String> {
     let key = std::env::var("OPENROUTER_API_KEY").map_err(|_| {
         anyhow::anyhow!("OPENROUTER_API_KEY not set — get one at https://openrouter.ai/keys")
     })?;
@@ -79,6 +120,7 @@ pub fn chat(model: &str, system: &str, prompt: &str) -> Result<String> {
             Message { role: "system".to_string(), content: system.to_string() },
             Message { role: "user".to_string(), content: prompt.to_string() },
         ],
+        response_format,
     };
 
     let agent = ureq::Agent::new_with_config(

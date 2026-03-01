@@ -2,6 +2,8 @@ use std::io::{self, BufRead, Write};
 use std::path::Path;
 
 use anyhow::{Result, bail};
+use serde::Deserialize;
+use serde_json::json;
 use tiktoken_rs::o200k_base;
 
 use crate::openrouter;
@@ -22,9 +24,47 @@ Return ONLY the rewritten Rust code. No markdown fences, no explanations.";
 
 const EXPLAIN_PROMPT: &str = "\
 You are a Rust code auditor. Given an ORIGINAL and REWRITTEN version of the same file, \
-list each change as a short bullet point: what was changed and how many tokens it likely saves. \
-Be specific (mention line numbers, function names, patterns). \
-Keep it concise — one line per change, no markdown fences.";
+list each change: what was changed and how many tokens it saves. \
+Be specific (mention function names, patterns).";
+
+#[derive(Deserialize)]
+struct ExplainResult {
+    changes: Vec<Change>,
+}
+
+#[derive(Deserialize)]
+struct Change {
+    description: String,
+    tokens_saved: u32,
+}
+
+fn explain_schema() -> serde_json::Value {
+    json!({
+        "type": "object",
+        "properties": {
+            "changes": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "description": {
+                            "type": "string",
+                            "description": "What was changed and where"
+                        },
+                        "tokens_saved": {
+                            "type": "integer",
+                            "description": "Number of tokens saved by this change"
+                        }
+                    },
+                    "required": ["description", "tokens_saved"],
+                    "additionalProperties": false
+                }
+            }
+        },
+        "required": ["changes"],
+        "additionalProperties": false
+    })
+}
 
 pub fn run(file: &str, model: &str) -> Result<()> {
     let path = Path::new(file);
@@ -69,10 +109,16 @@ pub fn run(file: &str, model: &str) -> Result<()> {
     println!();
     println!("Changes:");
     let explain_input = format!("ORIGINAL:\n{original}\n\nREWRITTEN:\n{clean}");
-    match openrouter::chat(model, EXPLAIN_PROMPT, &explain_input) {
-        Ok(explanation) => {
-            for line in explanation.lines() {
-                println!("  {line}");
+    match openrouter::chat_json::<ExplainResult>(
+        model,
+        EXPLAIN_PROMPT,
+        &explain_input,
+        "explain_result",
+        explain_schema(),
+    ) {
+        Ok(result) => {
+            for c in &result.changes {
+                println!("  - {} (~{} tokens)", c.description, c.tokens_saved);
             }
         }
         Err(_) => println!("  (could not generate explanation)"),
