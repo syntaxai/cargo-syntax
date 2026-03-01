@@ -1,4 +1,6 @@
 use anyhow::Result;
+use serde::Deserialize;
+use serde_json::json;
 use tiktoken_rs::o200k_base;
 use walkdir::WalkDir;
 
@@ -192,6 +194,36 @@ pub fn count_rev_tokens(rev: &str) -> Result<RevStats> {
     }
 
     Ok(RevStats { files: rs_files.len(), tokens: total_tokens, lines: total_lines })
+}
+
+pub fn scan_project_sorted() -> Result<ProjectStats> {
+    let mut stats = scan_project()?;
+    stats.files.sort_by(|a, b| b.tokens.cmp(&a.tokens));
+    Ok(stats)
+}
+
+pub fn pct_delta(delta: isize, base: usize) -> f64 {
+    if base > 0 { (delta as f64 / base as f64) * 100.0 } else { 0.0 }
+}
+
+#[derive(Deserialize)]
+pub struct Suggestion {
+    pub description: String,
+    pub location: String,
+    pub tokens_saved: u32,
+}
+
+pub fn suggestion_items_schema() -> serde_json::Value {
+    json!({
+        "type": "object",
+        "properties": {
+            "description": { "type": "string", "description": "What to change and why it saves tokens" },
+            "location": { "type": "string", "description": "Function name, line number, or code pattern" },
+            "tokens_saved": { "type": "integer", "description": "Estimated number of tokens saved" }
+        },
+        "required": ["description", "location", "tokens_saved"],
+        "additionalProperties": false
+    })
 }
 
 /// List .rs files at a specific git ref (commit/branch/tag), excluding target/

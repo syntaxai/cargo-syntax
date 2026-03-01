@@ -72,7 +72,7 @@ pub fn run(branch: &str) -> Result<()> {
         let sign = if token_delta > 0 { "+" } else { "" };
         println!(
             "Token delta: {sign}{token_delta} ({sign}{:.1}%)",
-            pct(token_delta, target_stats.tokens)
+            tokens::pct_delta(token_delta, target_stats.tokens)
         );
     }
 
@@ -82,10 +82,6 @@ pub fn run(branch: &str) -> Result<()> {
 fn print_row(label: &str, cur: usize, tgt: usize) {
     let delta = cur as isize - tgt as isize;
     println!("{label:<20} {cur:>10} {tgt:>10} {delta:>+10}");
-}
-
-fn pct(delta: isize, base: usize) -> f64 {
-    if base > 0 { (delta as f64 / base as f64) * 100.0 } else { 0.0 }
 }
 
 fn current_branch() -> Result<String> {

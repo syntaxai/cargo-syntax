@@ -69,7 +69,7 @@ pub fn run(n: usize) -> Result<()> {
         println!();
         println!(
             "Trend: {sign}{delta} tokens ({sign}{:.1}%) over {} commits",
-            if oldest.tokens > 0 { (delta as f64 / oldest.tokens as f64) * 100.0 } else { 0.0 },
+            tokens::pct_delta(delta, oldest.tokens),
             snapshots.len()
         );
     }

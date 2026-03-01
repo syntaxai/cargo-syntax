@@ -14,14 +14,7 @@ Do NOT repeat the same suggestion for multiple occurrences — mention it once."
 
 #[derive(Deserialize)]
 struct ReviewResult {
-    suggestions: Vec<Suggestion>,
-}
-
-#[derive(Deserialize)]
-struct Suggestion {
-    description: String,
-    location: String,
-    tokens_saved: u32,
+    suggestions: Vec<tokens::Suggestion>,
 }
 
 fn review_schema() -> serde_json::Value {
@@ -30,25 +23,7 @@ fn review_schema() -> serde_json::Value {
         "properties": {
             "suggestions": {
                 "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "description": {
-                            "type": "string",
-                            "description": "What to change and why it saves tokens"
-                        },
-                        "location": {
-                            "type": "string",
-                            "description": "Function name, line number, or code pattern"
-                        },
-                        "tokens_saved": {
-                            "type": "integer",
-                            "description": "Estimated number of tokens saved"
-                        }
-                    },
-                    "required": ["description", "location", "tokens_saved"],
-                    "additionalProperties": false
-                }
+                "items": tokens::suggestion_items_schema()
             }
         },
         "required": ["suggestions"],
@@ -57,8 +32,7 @@ fn review_schema() -> serde_json::Value {
 }
 
 pub fn run(n: usize, model: &str) -> Result<()> {
-    let mut stats = tokens::scan_project()?;
-    stats.files.sort_by(|a, b| b.tokens.cmp(&a.tokens));
+    let stats = tokens::scan_project_sorted()?;
 
     let show = n.min(stats.files.len());
     let max_tokens = model_context_limit(model).unwrap_or(DEFAULT_MAX_TOKENS);

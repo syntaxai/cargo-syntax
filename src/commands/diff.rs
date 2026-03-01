@@ -8,15 +8,8 @@ const DIFF_PROMPT: &str = "You are a Rust code auditor focused on token efficien
 
 #[derive(Deserialize)]
 struct DiffResult {
-    suggestions: Vec<DiffSuggestion>,
+    suggestions: Vec<tokens::Suggestion>,
     verdict: String,
-}
-
-#[derive(Deserialize)]
-struct DiffSuggestion {
-    description: String,
-    location: String,
-    tokens_saved: u32,
 }
 
 fn diff_schema() -> serde_json::Value {
@@ -25,16 +18,7 @@ fn diff_schema() -> serde_json::Value {
         "properties": {
             "suggestions": {
                 "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "description": { "type": "string", "description": "What to change and why it saves tokens" },
-                        "location": { "type": "string", "description": "Function name or line reference" },
-                        "tokens_saved": { "type": "integer", "description": "Estimated tokens saved" }
-                    },
-                    "required": ["description", "location", "tokens_saved"],
-                    "additionalProperties": false
-                }
+                "items": tokens::suggestion_items_schema()
             },
             "verdict": { "type": "string", "description": "One of: efficient, minor_issues, needs_work" }
         },

@@ -3,8 +3,7 @@ use anyhow::Result;
 use crate::tokens;
 
 pub fn run(n: usize) -> Result<()> {
-    let mut stats = tokens::scan_project()?;
-    stats.files.sort_by(|a, b| b.tokens.cmp(&a.tokens));
+    let stats = tokens::scan_project_sorted()?;
 
     let show = n.min(stats.files.len());
 
