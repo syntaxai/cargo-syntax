@@ -5,6 +5,7 @@ pub mod batch;
 pub mod check;
 pub mod ci;
 pub mod compare;
+pub mod deep;
 pub mod diff;
 pub mod explain;
 pub mod fix;

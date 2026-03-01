@@ -82,7 +82,9 @@ struct Hint {
     message: String,
 }
 
-pub fn run() -> Result<()> {
+pub fn run(deep: bool) -> Result<()> {
+    let stats = tokens::scan_project()?;
+
     println!("Analyzing code for token-efficiency improvements...\n");
 
     let mut args = vec![
@@ -142,10 +144,18 @@ pub fn run() -> Result<()> {
 
     if suggestions.is_empty() {
         println!("No suggestions — code already follows token-efficient patterns.");
+        if deep {
+            println!();
+            let result = super::deep::run(&stats);
+            if result.total_savings > 0 {
+                super::deep::print_results(&result, &stats);
+            } else {
+                println!("Deep analysis: no cross-file duplicates found.");
+            }
+        }
         return Ok(());
     }
 
-    let stats = tokens::scan_project()?;
     let ratio_map: HashMap<String, f64> =
         stats.files.iter().map(|f| (normalize(&f.path), f.ratio)).collect();
 
@@ -176,10 +186,20 @@ pub fn run() -> Result<()> {
         println!();
     }
 
+    tokens::separator(70);
     println!(
-        "{}\n{total} suggestion(s) across {file_count} file(s)\nRun `cargo syntax fix` to auto-apply all fixable suggestions.",
-        "─".repeat(70)
+        "{total} suggestion(s) across {file_count} file(s)\nRun `cargo syntax fix` to auto-apply all fixable suggestions."
     );
+
+    if deep {
+        println!();
+        let result = super::deep::run(&stats);
+        if result.total_savings > 0 {
+            super::deep::print_results(&result, &stats);
+        } else {
+            println!("Deep analysis: no cross-file duplicates found.");
+        }
+    }
 
     Ok(())
 }

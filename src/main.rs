@@ -44,7 +44,11 @@ enum Command {
         n: usize,
     },
     /// Analyze files and suggest token-efficiency improvements
-    Suggest,
+    Suggest {
+        /// Also detect cross-file code duplication (no API key needed)
+        #[arg(long)]
+        deep: bool,
+    },
     /// AI-powered rewrite of a file for token efficiency (via OpenRouter)
     Rewrite {
         /// Rust file to rewrite
@@ -161,7 +165,7 @@ fn main() -> Result<()> {
         Command::Badge => commands::badge::run(),
         Command::Apply => commands::apply::run(),
         Command::Top { n } => commands::top::run(n),
-        Command::Suggest => commands::suggest::run(),
+        Command::Suggest { deep } => commands::suggest::run(deep),
         Command::Rewrite { file, model } => {
             let model = model.unwrap_or_else(tokens::default_model);
             commands::rewrite::run(&file, &model)
