@@ -62,7 +62,7 @@ fn diff_schema() -> serde_json::Value {
     })
 }
 
-pub fn run(range: Option<&str>, staged: bool, model: &str) -> Result<()> {
+pub fn run(range: Option<&str>, staged: bool, fix: bool, model: &str) -> Result<()> {
     let diff_args = build_diff_args(range, staged);
     let diff_output = run_git_diff(&diff_args)?;
 
@@ -94,6 +94,7 @@ pub fn run(range: Option<&str>, staged: bool, model: &str) -> Result<()> {
     let mut total_suggestions = 0;
     let mut total_saveable = 0;
     let mut efficient_files = 0;
+    let mut files_to_fix = Vec::new();
 
     for file in &changed_files {
         let content = match std::fs::read_to_string(file) {
@@ -143,6 +144,7 @@ pub fn run(range: Option<&str>, staged: bool, model: &str) -> Result<()> {
                         total_saveable += s.tokens_saved as usize;
                     }
                     total_suggestions += result.suggestions.len();
+                    files_to_fix.push(file.clone());
                 }
             }
             Err(e) => {
@@ -167,8 +169,20 @@ pub fn run(range: Option<&str>, staged: bool, model: &str) -> Result<()> {
             0.0
         };
         println!("{total_suggestions} suggestion(s) could save ~{total_saveable} tokens ({pct:.0}%)");
+    }
+
+    if fix && !files_to_fix.is_empty() {
         println!();
-        println!("Run `cargo syntax fix` to auto-apply, or `cargo syntax rewrite <file>` to review.");
+        println!("Rewriting {} file(s) with suggestions...", files_to_fix.len());
+        println!();
+
+        for file in &files_to_fix {
+            super::rewrite::run(file, model)?;
+            println!();
+        }
+    } else if !fix && !files_to_fix.is_empty() {
+        println!();
+        println!("Run `cargo syntax diff --fix` to rewrite, or `cargo syntax rewrite <file>` individually.");
     }
 
     Ok(())

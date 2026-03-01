@@ -69,6 +69,9 @@ enum Command {
         /// Review staged changes instead of unstaged
         #[arg(long)]
         staged: bool,
+        /// Auto-rewrite files that have suggestions
+        #[arg(long)]
+        fix: bool,
         /// OpenRouter model (default: deepseek/deepseek-chat, override with CARGO_SYNTAX_MODEL)
         #[arg(long)]
         model: Option<String>,
@@ -100,9 +103,9 @@ fn main() -> Result<()> {
             let model = model.unwrap_or_else(tokens::default_model);
             commands::review::run(n, &model)
         }
-        Command::Diff { range, staged, model } => {
+        Command::Diff { range, staged, fix, model } => {
             let model = model.unwrap_or_else(tokens::default_model);
-            commands::diff::run(range.as_deref(), staged, &model)
+            commands::diff::run(range.as_deref(), staged, fix, &model)
         }
         Command::Models { search } => commands::models::run(search.as_deref()),
     }
