@@ -128,6 +128,37 @@ Use `--model` to pick a different model:
 cargo syntax rewrite src/main.rs --model google/gemini-2.5-flash
 ```
 
+### `cargo syntax review [n]`
+
+AI-powered project-wide review that scans your top N most token-heavy files and gives a prioritized action plan.
+
+```bash
+cargo syntax review        # review top 5 files
+cargo syntax review 3      # review top 3 files
+```
+
+```
+Scanning project... 15 files, 8409 tokens total
+Reviewing top 3 files via deepseek/deepseek-chat...
+
+  #1  src/commands/suggest.rs  (217 lines, 1455 tokens, T/L: 6.7, 17.3% of total)
+      - Combine multiple continue conditions into single if with && (~15 tokens)
+      - Inline normalize() calls where used only once (~10 tokens)
+      - Replace WARN_LINTS array with joined string (~50 tokens)
+      => est. savings: ~75 tokens (5.2%)
+
+  #2  src/commands/rewrite.rs  (152 lines, 1236 tokens, T/L: 8.1, 14.7% of total)
+      - Simplify strip_markdown_fences with chained operations (~5 tokens)
+      - Replace Vec collections in print_diff with iterator chains (~4 tokens)
+      => est. savings: ~76 tokens (6.1%)
+
+  ──────────────────────────────────────────────────────────────────
+  Reviewed 3/15 files (3620 of 8409 tokens)
+  Estimated total savings: ~151 tokens (1.8%)
+
+  Run `cargo syntax rewrite <file>` on any file to apply changes.
+```
+
 ## Clippy Lints
 
 `cargo-syntax` enforces three tiers of lints:

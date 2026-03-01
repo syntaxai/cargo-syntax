@@ -53,6 +53,15 @@ enum Command {
         #[arg(long, default_value = "deepseek/deepseek-chat")]
         model: String,
     },
+    /// AI-powered review of the top N most token-heavy files (via OpenRouter)
+    Review {
+        /// Number of files to review (default: 5)
+        #[arg(default_value = "5")]
+        n: usize,
+        /// OpenRouter model to use
+        #[arg(long, default_value = "deepseek/deepseek-chat")]
+        model: String,
+    },
 }
 
 fn main() -> Result<()> {
@@ -68,5 +77,6 @@ fn main() -> Result<()> {
         Command::Top { n } => commands::top::run(n),
         Command::Suggest => commands::suggest::run(),
         Command::Rewrite { file, model } => commands::rewrite::run(&file, &model),
+        Command::Review { n, model } => commands::review::run(n, &model),
     }
 }
