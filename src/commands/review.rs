@@ -3,6 +3,8 @@ use tiktoken_rs::o200k_base;
 
 use crate::{openrouter, tokens};
 
+const MAX_TOKENS_PER_FILE: usize = 20_000;
+
 const REVIEW_PROMPT: &str = "\
 You are a Rust code auditor focused on token efficiency. \
 Analyze the given Rust file and list concrete improvements to reduce token count. \
@@ -45,6 +47,13 @@ pub fn run(n: usize, model: &str) -> Result<()> {
             "  #{:<2} {name}  ({lines} lines, {tok} tokens, T/L: {ratio:.1}, {pct_of_total:.1}% of total)",
             i + 1
         );
+
+        if *tok > MAX_TOKENS_PER_FILE {
+            println!("      (skipped — {tok} tokens exceeds {MAX_TOKENS_PER_FILE} limit, too large for most models)");
+            println!("      Tip: split this file into smaller modules.");
+            println!();
+            continue;
+        }
 
         match openrouter::chat(model, REVIEW_PROMPT, content) {
             Ok(analysis) => {
