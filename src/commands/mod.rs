@@ -8,6 +8,7 @@ pub mod explain;
 pub mod fix;
 pub mod init;
 pub mod models;
+pub mod refactor;
 pub mod review;
 pub mod rewrite;
 pub mod suggest;

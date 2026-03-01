@@ -85,6 +85,12 @@ enum Command {
         #[arg(long)]
         model: Option<String>,
     },
+    /// AI-powered cross-file refactoring analysis for duplication
+    Refactor {
+        /// OpenRouter model (default: deepseek/deepseek-chat, override with CARGO_SYNTAX_MODEL)
+        #[arg(long)]
+        model: Option<String>,
+    },
     /// Bulk AI-powered rewrite of the most token-heavy files
     Batch {
         /// Number of files to rewrite (default: 5)
@@ -134,6 +140,10 @@ fn main() -> Result<()> {
         Command::Explain { path, model } => {
             let model = model.unwrap_or_else(tokens::default_model);
             commands::explain::run(&path, &model)
+        }
+        Command::Refactor { model } => {
+            let model = model.unwrap_or_else(tokens::default_model);
+            commands::refactor::run(&model)
         }
         Command::Batch { n, validate, auto, model } => {
             let model = model.unwrap_or_else(tokens::default_model);

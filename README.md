@@ -284,6 +284,33 @@ Explaining project (19 files, 15131 tokens)...
   Start here: src/main.rs
 ```
 
+### `cargo syntax refactor`
+
+AI-powered cross-file refactoring analysis. Scans the entire project for duplicated patterns and suggests shared functions, traits, or modules to extract.
+
+```bash
+cargo syntax refactor
+```
+
+```
+Scanning 19 files (16234 tokens) for cross-file duplication via deepseek/deepseek-chat...
+  analyzing... done
+
+  1. Repeated cargo command invocation pattern
+     Files: src/commands/check.rs, src/commands/fix.rs
+     Fix: Extract shared run_cargo() helper
+     Saves: ~80 tokens
+
+  2. Duplicate ratio calculation in audit and badge
+     Files: src/commands/audit.rs, src/commands/badge.rs
+     Fix: Move T/L ratio calc to tokens::ratio()
+     Saves: ~45 tokens
+
+──────────────────────────────────────────────────────────────────────
+Overall: well-structured with minor duplication opportunities
+2 pattern(s) found, ~125 tokens saveable (0.8% of project)
+```
+
 ### `cargo syntax models [search]`
 
 List available OpenRouter models, sorted by price. Without arguments, shows popular code models. Pass a search term to filter.
