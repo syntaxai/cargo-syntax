@@ -62,6 +62,17 @@ enum Command {
         #[arg(long)]
         model: Option<String>,
     },
+    /// AI-powered review of uncommitted changes for token efficiency
+    Diff {
+        /// Git range (e.g. "main..HEAD"), defaults to unstaged changes
+        range: Option<String>,
+        /// Review staged changes instead of unstaged
+        #[arg(long)]
+        staged: bool,
+        /// OpenRouter model (default: deepseek/deepseek-chat, override with CARGO_SYNTAX_MODEL)
+        #[arg(long)]
+        model: Option<String>,
+    },
     /// List available OpenRouter models for code tasks
     Models {
         /// Filter models by name or ID (e.g. "deepseek", "claude", "gemini")
@@ -88,6 +99,10 @@ fn main() -> Result<()> {
         Command::Review { n, model } => {
             let model = model.unwrap_or_else(tokens::default_model);
             commands::review::run(n, &model)
+        }
+        Command::Diff { range, staged, model } => {
+            let model = model.unwrap_or_else(tokens::default_model);
+            commands::diff::run(range.as_deref(), staged, &model)
         }
         Command::Models { search } => commands::models::run(search.as_deref()),
     }

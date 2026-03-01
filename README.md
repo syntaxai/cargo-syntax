@@ -159,6 +159,39 @@ Reviewing top 3 files via deepseek/deepseek-chat...
   Run `cargo syntax rewrite <file>` on any file to apply changes.
 ```
 
+### `cargo syntax diff [range]`
+
+AI-powered review of your uncommitted changes before you commit. Analyzes only modified `.rs` files and suggests token-efficient alternatives.
+
+```bash
+cargo syntax diff              # review unstaged changes
+cargo syntax diff --staged     # review staged changes
+cargo syntax diff main..HEAD   # review branch changes
+```
+
+```
+Analyzing unstaged changes via deepseek/deepseek-chat...
+
+src/parser.rs  (modified, +45 lines, ~+380 tokens, T/L: 8.2)
+  - Manual loop could be iterator chain [parse_items()] (~12 tokens)
+  - Redundant clone on Copy type [line 31] (~4 tokens)
+  - Verbose match could be if-let [process()] (~8 tokens)
+
+src/optimizer.rs  (new file, 89 lines, 650 tokens, T/L: 7.3)
+  ✓ Changes look token-efficient
+
+──────────────────────────────────────────────────────────────────
+Summary: 2 file(s) changed, ~+1030 tokens added
+3 suggestion(s) could save ~24 tokens (2%)
+```
+
+Set `CARGO_SYNTAX_MODEL` to use a different model, or pass `--model`:
+
+```bash
+export CARGO_SYNTAX_MODEL=anthropic/claude-sonnet-4
+cargo syntax diff --staged
+```
+
 ### `cargo syntax models [search]`
 
 List available OpenRouter models, sorted by price. Without arguments, shows popular code models. Pass a search term to filter.
