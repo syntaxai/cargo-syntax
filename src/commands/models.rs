@@ -59,6 +59,16 @@ pub fn run(search: Option<&str>) -> Result<()> {
 
     println!();
     println!("{} model(s) found", models.len());
+
+    if search.is_none() {
+        println!();
+        println!("Recommended for cargo-syntax:");
+        println!("  Free:   qwen/qwen3-coder:free         — free, 262K context, good for code");
+        println!("  Cheap:  deepseek/deepseek-chat         — $0.32/M, strong coder, default model");
+        println!("  Best:   anthropic/claude-sonnet-4      — $3/M, highest quality rewrites");
+        println!("  Large:  google/gemini-2.5-flash        — $0.30/M, 1M context for huge files");
+    }
+
     println!();
     println!("Usage: cargo syntax rewrite src/main.rs --model <MODEL_ID>");
     println!("   or: cargo syntax review 5 --model <MODEL_ID>");
