@@ -400,19 +400,19 @@ Generating tests for src/tokens.rs (138 lines, 1143 tokens) via deepseek/deepsee
   Skipped: git_list_rs_files, git_show_file (need I/O/network)
 
 ──────────────────────────────────────────────────────────────────────
-mod tests {
-    use super::*;
+use cargo_syntax::tokens::*;
 
-    #[test]
-    fn test_count_tokens_empty_string() { ... }
-    #[test]
-    fn test_efficiency_grade_a_plus() { ... }
-    ...
-}
+#[test]
+fn test_count_tokens_empty_string() { ... }
+#[test]
+fn test_efficiency_grade_a_plus() { ... }
+...
 ──────────────────────────────────────────────────────────────────────
 
 Write to tests/test_tokens.rs? [y/n/append]
 ```
+
+Generates proper integration tests (`tests/` directory) with `use <crate>::<module>::*;` imports — not inline `mod tests` blocks. Automatically detects crate name and module path from `Cargo.toml` and file location.
 
 Options: `y` writes the file, `append` adds tests to an existing test file, `n` discards.
 After writing, automatically runs `cargo test --no-run` to verify the tests compile.
@@ -543,6 +543,19 @@ When building real applications, these crates reduce boilerplate significantly:
 | `serde` | Manual serialization | ~100+ lines per data type |
 | `clap` (derive) | Manual arg parsing | ~30 lines per CLI |
 | `itertools` | Verbose iterator chains | ~5-10 lines per chain |
+
+## Testing
+
+cargo-syntax is tested with its own tooling. Run the full suite:
+
+```bash
+cargo test
+```
+
+**39 tests** covering:
+- `tokens` module: token counting, efficiency grades, project scanning, git helpers (21 integration tests)
+- `ci` module: grade ranking and ordering (7 unit tests)
+- `generate_tests` module: markdown fence stripping, crate/module detection, path generation (11 unit tests)
 
 ## License
 
