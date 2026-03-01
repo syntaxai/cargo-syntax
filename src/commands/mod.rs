@@ -4,6 +4,7 @@ pub mod badge;
 pub mod batch;
 pub mod check;
 pub mod diff;
+pub mod explain;
 pub mod fix;
 pub mod init;
 pub mod models;

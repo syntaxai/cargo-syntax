@@ -11,6 +11,8 @@ struct Request {
     messages: Vec<Message>,
     #[serde(skip_serializing_if = "Option::is_none")]
     response_format: Option<ResponseFormat>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_tokens: Option<u32>,
 }
 
 #[derive(Serialize)]
@@ -85,7 +87,7 @@ pub fn list_models() -> Result<Vec<Model>> {
 }
 
 pub fn chat(model: &str, system: &str, prompt: &str) -> Result<String> {
-    chat_with_format(model, system, prompt, None)
+    chat_with_options(model, system, prompt, None, None)
 }
 
 pub fn chat_json<T: serde::de::DeserializeOwned>(
@@ -100,16 +102,17 @@ pub fn chat_json<T: serde::de::DeserializeOwned>(
         json_schema: JsonSchemaWrapper { name: schema_name.to_string(), strict: true, schema },
     };
 
-    let raw = chat_with_format(model, system, prompt, Some(format))?;
+    let raw = chat_with_options(model, system, prompt, Some(format), Some(4096))?;
     serde_json::from_str(&raw)
         .map_err(|e| anyhow::anyhow!("Failed to parse structured response: {e}"))
 }
 
-fn chat_with_format(
+fn chat_with_options(
     model: &str,
     system: &str,
     prompt: &str,
     response_format: Option<ResponseFormat>,
+    max_tokens: Option<u32>,
 ) -> Result<String> {
     let key = std::env::var("OPENROUTER_API_KEY").map_err(|_| {
         anyhow::anyhow!("OPENROUTER_API_KEY not set — get one at https://openrouter.ai/keys")
@@ -122,6 +125,7 @@ fn chat_with_format(
             Message { role: "user".to_string(), content: prompt.to_string() },
         ],
         response_format,
+        max_tokens,
     };
 
     let agent = ureq::Agent::new_with_config(

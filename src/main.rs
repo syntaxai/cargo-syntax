@@ -76,6 +76,15 @@ enum Command {
         #[arg(long)]
         model: Option<String>,
     },
+    /// AI-powered code explanation for onboarding and understanding
+    Explain {
+        /// File or directory to explain (default: src/)
+        #[arg(default_value = "src/")]
+        path: String,
+        /// OpenRouter model (default: deepseek/deepseek-chat, override with CARGO_SYNTAX_MODEL)
+        #[arg(long)]
+        model: Option<String>,
+    },
     /// Bulk AI-powered rewrite of the most token-heavy files
     Batch {
         /// Number of files to rewrite (default: 5)
@@ -121,6 +130,10 @@ fn main() -> Result<()> {
         Command::Diff { range, staged, fix, model } => {
             let model = model.unwrap_or_else(tokens::default_model);
             commands::diff::run(range.as_deref(), staged, fix, &model)
+        }
+        Command::Explain { path, model } => {
+            let model = model.unwrap_or_else(tokens::default_model);
+            commands::explain::run(&path, &model)
         }
         Command::Batch { n, validate, auto, model } => {
             let model = model.unwrap_or_else(tokens::default_model);
